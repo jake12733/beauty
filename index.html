@@ -1,34 +1,4014 @@
-<!doctype html>
-<html lang="ko">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SOLSTICE® Beauty — Atelier Color, Skincare &amp; Scent</title>
-    <meta
-      name="description"
-      content="감각적인 컬러 립 틴트, 아이 팔레트, 보태니컬 스킨케어와 아틀리에 센트를 선보이는 에디토리얼 코스메틱 스토어."
+import { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  ArrowRight,
+  ArrowUpRight,
+  Calendar,
+  Check,
+  CheckCircle2,
+  Gift,
+  Heart,
+  Layers,
+  Menu,
+  Minus,
+  Moon,
+  Pause,
+  Play,
+  Plus,
+  Search,
+  ShoppingBag,
+  Sparkles,
+  Sun,
+  Sunset,
+  Trash2,
+  X,
+} from 'lucide-react';
+import {
+  AnimatePresence,
+  MotionConfig,
+  motion,
+  useMotionValueEvent,
+  useScroll,
+  useSpring,
+  useTransform,
+} from 'motion/react';
+
+/* ============================================================================
+   1. Custom CSS (Typography, Meridian Motion, Hover Transitions, Marquee)
+============================================================================ */
+const CUSTOM_CSS = `
+  html {
+    scroll-behavior: smooth;
+    font-family: "Pretendard Variable", "Pretendard", "Outfit", -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+
+  body {
+    overflow-x: clip;
+  }
+
+  .font-serif-kr {
+    font-family: "Cormorant Garamond", "Noto Serif KR", Georgia, serif;
+  }
+
+  .font-display-sans {
+    font-family: "Outfit", "Pretendard Variable", "Pretendard", sans-serif;
+  }
+
+  .font-mono-code {
+    font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  }
+
+  .hover-lift {
+    transition:
+      transform 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+      box-shadow 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+      background-color 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+      border-color 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+      color 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .hover-lift:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 14px 28px -10px rgba(18, 16, 15, 0.28);
+  }
+
+  .hover-lift:active {
+    transform: translateY(-1px);
+  }
+
+  .hover-card-lift {
+    transition:
+      transform 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+      box-shadow 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+      border-color 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .hover-card-lift:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 18px 36px -12px rgba(18, 16, 15, 0.18);
+  }
+
+  .meridian-btn {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+    transition:
+      transform 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+      box-shadow 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+      color 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+      border-color 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .meridian-btn::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-color: var(--curtain-bg, #1C1917);
+    transform: translateY(102%);
+    transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+    z-index: -1;
+  }
+
+  .meridian-btn:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 16px 32px -12px rgba(18, 16, 15, 0.35);
+  }
+
+  .meridian-btn:hover::before {
+    transform: translateY(0%);
+  }
+
+  .meridian-btn .meridian-arrow {
+    transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .meridian-btn:hover .meridian-arrow {
+    transform: rotate(-45deg);
+  }
+
+  .nav-link-underline {
+    position: relative;
+    transition:
+      transform 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+      color 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .nav-link-underline::after {
+    content: "";
+    position: absolute;
+    right: 0;
+    bottom: -4px;
+    left: 0;
+    height: 1px;
+    background-color: currentColor;
+    transform: scaleX(0);
+    transform-origin: right center;
+    transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .nav-link-underline:hover,
+  .nav-link-underline.is-active {
+    transform: translateY(-1px);
+  }
+
+  .nav-link-underline:hover::after,
+  .nav-link-underline.is-active::after {
+    transform: scaleX(1);
+    transform-origin: left center;
+  }
+
+  @keyframes meridian-marquee {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-50%);
+    }
+  }
+
+  .marquee-track {
+    display: flex;
+    width: max-content;
+    animation: meridian-marquee 34s linear infinite;
+  }
+
+  .marquee-wrapper:hover .marquee-track {
+    animation-play-state: paused;
+  }
+
+  .marquee-mask {
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+    mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+  }
+
+  @media (hover: none), (pointer: coarse) {
+    .solstice-cursor {
+      display: none !important;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+
+    .marquee-track {
+      animation: none !important;
+    }
+
+    .solstice-cursor {
+      display: none !important;
+    }
+
+    .hover-lift,
+    .hover-card-lift,
+    .meridian-btn,
+    .meridian-btn::before,
+    .meridian-btn .meridian-arrow,
+    .nav-link-underline,
+    .nav-link-underline::after {
+      transition: none !important;
+    }
+
+    .hover-lift:hover,
+    .hover-lift:active,
+    .hover-card-lift:hover,
+    .meridian-btn:hover,
+    .nav-link-underline:hover {
+      transform: none !important;
+    }
+
+    .meridian-btn:hover::before {
+      transform: translateY(102%) !important;
+    }
+
+    .meridian-btn:hover .meridian-arrow {
+      transform: none !important;
+    }
+  }
+`;
+
+/* ============================================================================
+   2. Types & Product Data
+============================================================================ */
+export type ProductCategory = 'all' | 'lip' | 'eye' | 'skincare' | 'tool';
+export type CurationCategory =
+  | 'all'
+  | 'lip'
+  | 'eye-base'
+  | 'skincare'
+  | 'brush-scent';
+
+export interface ProductShade {
+  id: string;
+  name: string;
+  englishName: string;
+  hex: string;
+  description: string;
+}
+
+export interface BeautyProduct {
+  id: string;
+  indexLabel: string;
+  categoryKey: Exclude<ProductCategory, 'all'>;
+  curationCategory?: Exclude<CurationCategory, 'all'>;
+  categoryTag: string;
+  categoryKorean: string;
+  code: string;
+  weight: string;
+  name: string;
+  shortName: string;
+  price: number;
+  image: string;
+  filmTimestamp: string;
+  editorialTag?: string;
+  summary: string;
+  details: string[];
+  shades: ProductShade[];
+  inFilm: boolean;
+}
+
+export interface CartItem {
+  product: BeautyProduct;
+  shade: ProductShade;
+  quantity: number;
+}
+
+const EASE_OUT: [number, number, number, number] = [0.22, 1, 0.36, 1];
+const EASE_MASK: [number, number, number, number] = [0.16, 1, 0.3, 1];
+
+const PRODUCTS: BeautyProduct[] = [
+  {
+    id: 'velvet-blur-lip-tint',
+    indexLabel: '01',
+    categoryKey: 'lip',
+    categoryTag: 'Lip Color',
+    categoryKorean: '립 컬러',
+    code: 'BTY-LP01',
+    weight: '3.8 g / 0.13 oz',
+    name: '벨벳 블러 리퀴드 립 틴트',
+    shortName: '벨벳 블러 리퀴드 립 틴트',
+    price: 34000,
+    image: '/src/assets/images/hero_spotlight_lip_1795158560325.jpg',
+    filmTimestamp: '00:16',
+    summary:
+      '입술 주름 사이를 매끈하게 채우며 공기처럼 가볍게 밀착되는 소프트 매트 벨벳 리퀴드 립 틴트입니다.',
+    details: [
+      '로즈힙 오일 & 시어버터 유래 보습 컴플렉스 함유',
+      '묻어남을 최소화한 에어리 블러 피니시',
+      '100% 비건 포뮬러 · 피부 저자극 테스트 완료',
+    ],
+    shades: [
+      {
+        id: 'mauve-rose',
+        name: '01 모브 로즈',
+        englishName: 'Mauve Rose',
+        hex: '#9E5B65',
+        description: '차분한 장미빛이 감도는 시그니처 뮤트 모브',
+      },
+      {
+        id: 'dusty-fig',
+        name: '02 더스티 피그',
+        englishName: 'Dusty Fig',
+        hex: '#8C434A',
+        description: '무화과 과육처럼 은은하게 물드는 딥 로즈우드',
+      },
+      {
+        id: 'burgundy-night',
+        name: '03 버건디 나잇',
+        englishName: 'Burgundy Night',
+        hex: '#63262E',
+        description: '깊이감 있는 저녁 무드를 완성하는 플럼 버건디',
+      },
+    ],
+    inFilm: true,
+  },
+  {
+    id: 'atelier-rosewood-palette',
+    indexLabel: '02',
+    categoryKey: 'eye',
+    categoryTag: 'Eye Palette',
+    categoryKorean: '아이 팔레트',
+    code: 'BTY-EY16',
+    weight: '14.4 g / 0.50 oz',
+    name: '16구 아틀리에 로즈우드 아이 팔레트',
+    shortName: '16구 아틀리에 로즈우드 아이 ...',
+    price: 68000,
+    image: '/src/assets/images/hero_spotlight_palette_1795158559644.jpg',
+    filmTimestamp: '00:08',
+    summary:
+      '실키 매트부터 투명하게 빛나는 쉬머 펄까지, 톤온톤 레이어링에 최적화된 16가지 로즈우드 뉴트럴 셰이드 팔레트입니다.',
+    details: [
+      '가루 날림 없이 피부에 스며드는 미세 밀착 피그먼트',
+      '베이스 음영·미디엄 블렌딩·딥 아이라인 겸용 구성',
+      '휴대하기 좋은 슬림 리넨 케이스 & 와이드 미러',
+    ],
+    shades: [
+      {
+        id: 'rosewood-atelier',
+        name: '01 로즈우드 아틀리에',
+        englishName: 'Rosewood Atelier',
+        hex: '#8E625B',
+        description: '따뜻한 로즈우드와 토프 브라운 16컬러 하모니',
+      },
+      {
+        id: 'ash-taupe',
+        name: '02 애쉬 토프 에디션',
+        englishName: 'Ash Taupe Edition',
+        hex: '#6E6360',
+        description: '쿨 뉴트럴 그레이지와 모브 음영 중심 팔레트',
+      },
+    ],
+    inFilm: true,
+  },
+  {
+    id: 'artisan-vegan-brush-set',
+    indexLabel: '03',
+    categoryKey: 'tool',
+    categoryTag: 'Brush & Tool',
+    categoryKorean: '브러시 & 툴',
+    code: 'BTY-TL07',
+    weight: '7 pcs + Pouch',
+    name: '아티잔 비건 브러시 7종 & 우드 파우치',
+    shortName: '아티잔 비건 브러시 7종 & 우...',
+    price: 89000,
+    image: '/src/assets/images/hero_spotlight_brush_1795158560355.jpg',
+    filmTimestamp: '00:03',
+    summary:
+      '천연모 못지않은 부드러운 탄력을 구현한 프리미엄 비건 파이버 7종 브러시와 왁스 캔버스 롤 파우치 세트입니다.',
+    details: [
+      '파우더·치크·쉐이딩·아이 블렌딩·립 디테일 7종 풀 구성',
+      '손목 부담을 줄인 에보니 매트 우드 핸들',
+      '전용 캔버스 & 비건 레더 트래블 롤 파우치 포함',
+    ],
+    shades: [
+      {
+        id: 'charcoal-canvas',
+        name: '차콜 캔버스 파우치',
+        englishName: 'Charcoal Canvas',
+        hex: '#2F2D2B',
+        description: '딥 차콜 왁스 캔버스 & 다크 브라운 트림',
+      },
+      {
+        id: 'sand-linen',
+        name: '샌드 리넨 파우치',
+        englishName: 'Sand Linen',
+        hex: '#A7998B',
+        description: '내추럴 오트밀 캔버스 & 에스프레소 스트랩',
+      },
+    ],
+    inFilm: true,
+  },
+  {
+    id: 'botanical-barrier-serum',
+    indexLabel: '04',
+    categoryKey: 'skincare',
+    categoryTag: 'Skincare',
+    categoryKorean: '스킨케어',
+    code: 'BTY-SK04',
+    weight: '30 ml / 1.01 fl oz',
+    name: '보태니컬 배리어 카밍 세럼',
+    shortName: '보태니컬 배리어 카밍 세럼',
+    price: 54000,
+    image: '/src/assets/images/product_barrier_serum_1795157369982.jpg',
+    filmTimestamp: '00:12',
+    summary:
+      '메이크업 전 피부 결을 탄탄하게 정돈하고 수분 장벽을 촘촘히 채워주는 고농축 보태니컬 배리어 세럼입니다.',
+    details: [
+      '세라마이드 NP · 판테놀 · 병풀 추출물 72% 배합',
+      '끈적임 없이 산뜻하게 흡수되는 워터리 오일 텍스처',
+      '인공 향료·파라벤 무첨가 민감성 피부 적합 포뮬러',
+    ],
+    shades: [
+      {
+        id: '30ml-standard',
+        name: '30 ml 스탠다드',
+        englishName: '30 ml Dropper',
+        hex: '#9A6B3E',
+        description: '데일리 리추얼을 위한 앰버 글라스 드로퍼 보틀',
+      },
+      {
+        id: '50ml-atelier',
+        name: '50 ml 아틀리에 에디션',
+        englishName: '50 ml Atelier Size',
+        hex: '#734B28',
+        description: '부티크 한정 대용량 세럼 보틀',
+      },
+    ],
+    inFilm: false,
+  },
+];
+
+const CURATION_PRODUCTS: BeautyProduct[] = [
+  {
+    id: 'curation-lp01',
+    indexLabel: '01',
+    categoryKey: 'lip',
+    curationCategory: 'lip',
+    categoryTag: 'LIP COLOR',
+    categoryKorean: '립 메이크업',
+    code: 'BTY-LP01',
+    weight: '3.8 g / 0.13 oz',
+    name: '벨벳 블러 리퀴드 립 틴트',
+    shortName: '벨벳 블러 리퀴드 립 틴트',
+    price: 34000,
+    image: '/src/assets/images/product_velvet_lip_tint_1795157369506.jpg',
+    filmTimestamp: '00:16',
+    editorialTag: 'Film Pick',
+    summary:
+      '더스티 모브 로즈와 딥 베리 피그먼트가 입술 위에 실크처럼 얇게 밀착되는 소프트 벨벳 립 틴트입니다.',
+    details: [
+      '로즈힙 오일 · 시어버터 보습 배합',
+      '블러링 파우더 텍스처로 각질 부각 최소화',
+      '비건 인증 · 피부 저자극 테스트 완료',
+    ],
+    shades: [
+      {
+        id: 'dusty-mauve-rose',
+        name: '01 더스티 모브 로즈',
+        englishName: 'Dusty Mauve Rose',
+        hex: '#945B63',
+        description: '톤 다운된 빈티지 장미빛 시그니처 쉐이드',
+      },
+      {
+        id: 'plum-wine',
+        name: '02 딥 플럼 와인',
+        englishName: 'Deep Plum Wine',
+        hex: '#5D232A',
+        description: '농밀한 와인 빛의 포인트 버건디',
+      },
+      {
+        id: 'roasted-fig',
+        name: '03 로스티드 피그',
+        englishName: 'Roasted Fig',
+        hex: '#9C6A58',
+        description: '내추럴한 무화과 누드 브라운',
+      },
+    ],
+    inFilm: true,
+  },
+  {
+    id: 'curation-ey02',
+    indexLabel: '02',
+    categoryKey: 'eye',
+    curationCategory: 'eye-base',
+    categoryTag: 'EYE PALETTE',
+    categoryKorean: '아이 · 베이스',
+    code: 'BTY-EY02',
+    weight: '14.4 g / 0.50 oz',
+    name: '16구 아틀리에 로즈우드 아이 팔레트',
+    shortName: '16구 아틀리에 로즈우드 아이 팔레트',
+    price: 68000,
+    image: '/src/assets/images/product_rosewood_palette_1795157370174.jpg',
+    filmTimestamp: '00:08',
+    editorialTag: 'Best Seller',
+    summary:
+      '오로라 더스크 무드의 로즈·플럼 매트와 크리스탈 글리터로 구성된 16구 아틀리에 아이 섀도우 팔레트입니다.',
+    details: [
+      '16가지 실키 매트 · 쉬머 · 멀티 글리터 구성',
+      '뭉침 없이 블렌딩되는 초미세 파우더',
+      '내장 와이드 미러 및 슬림 패브릭 커버',
+    ],
+    shades: [
+      {
+        id: 'aurora-dusk',
+        name: 'No.01 오로라 더스크 (로즈 · 플럼)',
+        englishName: 'Aurora Dusk',
+        hex: '#7B464F',
+        description: '로즈우드와 모브 플럼이 조화된 베스트 쉐이드',
+      },
+      {
+        id: 'warm-cashmere',
+        name: 'No.02 웜 캐시미어 (토프 · 샌드)',
+        englishName: 'Warm Cashmere',
+        hex: '#8C7465',
+        description: '부드러운 음영과 골드 쉬머 조합',
+      },
+    ],
+    inFilm: true,
+  },
+  {
+    id: 'curation-tl03',
+    indexLabel: '03',
+    categoryKey: 'tool',
+    curationCategory: 'brush-scent',
+    categoryTag: 'BRUSH & TOOL',
+    categoryKorean: '브러시 · 센트',
+    code: 'BTY-TL03',
+    weight: '7 pcs + Woven Pouch',
+    name: '아티잔 비건 브러시 7종 & 우븐 파우치',
+    shortName: '아티잔 비건 브러시 7종 & 우븐 파우치',
+    price: 92000,
+    image: '/src/assets/images/product_vegan_brushes_1795157369350.jpg',
+    filmTimestamp: '00:03',
+    editorialTag: 'Atelier Craft',
+    summary:
+      '매트 차콜 핸들과 브러시드 골드 페룰, 내추럴 우븐 파우치로 완성한 프로페셔널 7종 비건 브러시 컬렉션입니다.',
+    details: [
+      '페이스 3종 + 아이·디테일 4종 풀 세트',
+      '브러시드 골드 알루미늄 페룰 & 차콜 우드 핸들',
+      '헤비웨이트 린넨 우븐 파우치 기본 증정',
+    ],
+    shades: [
+      {
+        id: 'charcoal-gold',
+        name: '매트 차콜 · 브러시드 골드',
+        englishName: 'Matte Charcoal & Gold',
+        hex: '#282725',
+        description: '시그니처 매트 차콜 핸들 & 골드 페룰 세트',
+      },
+      {
+        id: 'oatmeal-linen',
+        name: '오트밀 리넨 에디션',
+        englishName: 'Oatmeal Linen',
+        hex: '#CFC6B8',
+        description: '내추럴 아이보리 톤 파우치 구성',
+      },
+    ],
+    inFilm: true,
+  },
+  {
+    id: 'curation-sk04',
+    indexLabel: '04',
+    categoryKey: 'skincare',
+    curationCategory: 'skincare',
+    categoryTag: 'SKINCARE',
+    categoryKorean: '스킨케어',
+    code: 'BTY-SK04',
+    weight: '30 ml / 1.01 fl oz',
+    name: '래디언스 보태니컬 배리어 세럼',
+    shortName: '래디언스 보태니컬 배리어 세럼',
+    price: 78000,
+    image: '/src/assets/images/product_barrier_serum_1795157369982.jpg',
+    filmTimestamp: '00:12',
+    editorialTag: 'Clean Formula',
+    summary:
+      '앰버 골드 보태니컬 오일 드롭과 세라마이드가 무너진 피부 장벽을 빠르게 진정시키고 윤기를 더하는 고농축 세럼입니다.',
+    details: [
+      '식물성 스쿠알란 & 세라마이드 NP 고함량 처방',
+      '메이크업 밀착력을 높이는 쫀쫀한 래디언스 피니시',
+      'PEG · 실리콘 · 인공 색소 무첨가 클린 포뮬러',
+    ],
+    shades: [
+      {
+        id: '30ml-amber',
+        name: '30ml 스탠다드 앰버',
+        englishName: '30ml Standard Amber',
+        hex: '#A86E1E',
+        description: '자외선 차단이 가능한 30ml 앰버 글라스 보틀',
+      },
+      {
+        id: '50ml-refill',
+        name: '50ml 리필 파우치 세트',
+        englishName: '50ml Atelier Set',
+        hex: '#6B4616',
+        description: '본품과 친환경 리필 구성',
+      },
+    ],
+    inFilm: false,
+  },
+  {
+    id: 'curation-bs05',
+    indexLabel: '05',
+    categoryKey: 'skincare',
+    curationCategory: 'eye-base',
+    categoryTag: 'COMPLEXION',
+    categoryKorean: '아이 · 베이스',
+    code: 'BTY-BS05',
+    weight: '15 g / SPF50+ PA+++',
+    name: '실크 벨벳 스킨 쿠션 SPF50+ PA+++',
+    shortName: '실크 벨벳 스킨 쿠션 SPF50+ PA+++',
+    price: 54000,
+    image: '/src/assets/images/product_silk_cushion_1795158124605.jpg',
+    filmTimestamp: '00:14',
+    summary:
+      '얇고 고운 입자가 모공과 요철을 자연스럽게 커버하면서 하루 종일 맑은 세미 매트 광채를 유지해 주는 스킨 쿠션입니다.',
+    details: [
+      'SPF50+ PA+++ 자외선 차단 · 미백 · 주름개선 3중 기능성',
+      '다크닝 없이 화사하게 유지되는 롱래스팅 피그먼트',
+      '리필 1개 추가 구성 & 물방울 형태 루비셀 퍼프 내장',
+    ],
+    shades: [
+      {
+        id: '21-porcelain',
+        name: '21호 포슬린 아이보리',
+        englishName: '21 Porcelain Ivory',
+        hex: '#EFE6DA',
+        description: '화사하고 맑은 뉴트럴 21호 아이보리 톤',
+      },
+      {
+        id: '23-sand-beige',
+        name: '23호 내추럴 샌드',
+        englishName: '23 Natural Sand',
+        hex: '#D4BFA8',
+        description: '차분하고 건강한 23호 미디엄 베이지 톤',
+      },
+    ],
+    inFilm: false,
+  },
+  {
+    id: 'curation-sc06',
+    indexLabel: '06',
+    categoryKey: 'tool',
+    curationCategory: 'brush-scent',
+    categoryTag: 'HOME SCENT',
+    categoryKorean: '브러시 · 센트',
+    code: 'BTY-SC06',
+    weight: '220 g / Burn Time 50h',
+    name: '앰버 & 상탈 아틀리에 소이 캔들',
+    shortName: '앰버 & 상탈 아틀리에 소이 캔들',
+    price: 62000,
+    image: '/src/assets/images/product_amber_candle_1795158124688.jpg',
+    filmTimestamp: '00:16',
+    editorialTag: 'Limited Batch',
+    summary:
+      '깊은 우디 상탈과 따뜻한 앰버, 스모키 시더우드가 조화를 이루어 아틀리에의 고요한 저녁 무드를 채우는 소이 캔들입니다.',
+    details: [
+      '100% 천연 소이 왁스 & 에코 코튼 심지 사용',
+      '탑: 카다멈 · 미들: 상탈우드 · 베이스: 앰버 머스크',
+      '핸드 푸어드 소량 생산 (약 50시간 연속 연소)',
+    ],
+    shades: [
+      {
+        id: 'no24-amber-brown',
+        name: 'No.24 앰버 & 상탈 (브라운 자)',
+        englishName: 'No.24 Amber & Santal',
+        hex: '#57361C',
+        description: '따뜻한 앰버 글라스 자 · 스모키 우디 향',
+      },
+      {
+        id: 'no18-ivory-ceramic',
+        name: 'No.18 누아르 우드 (크림 세라믹)',
+        englishName: 'No.18 Noir Oud',
+        hex: '#D6CFC2',
+        description: '매트 크림 세라믹 용기 · 시더우드 & 유자 향',
+      },
+    ],
+    inFilm: false,
+  },
+];
+
+const FILM_HIGHLIGHT_PRODUCTS = PRODUCTS.filter((p) => p.inFilm);
+
+const formatKRW = (amount: number): string =>
+  `₩${amount.toLocaleString('ko-KR')}`;
+
+/* ============================================================================
+   3. Custom Cursor & Scroll Progress Bar
+============================================================================ */
+function CustomCursor() {
+  const ringRef = useRef<HTMLDivElement | null>(null);
+  const dotRef = useRef<HTMLDivElement | null>(null);
+  const [label, setLabel] = useState<string>('');
+  const [isHoveringInteractive, setIsHoveringInteractive] = useState(false);
+  const [isOnDark, setIsOnDark] = useState(true);
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    const canHover = window.matchMedia(
+      '(hover: hover) and (pointer: fine)'
+    ).matches;
+    const reduced = window.matchMedia(
+      '(prefers-reduced-motion: reduce)'
+    ).matches;
+
+    if (!canHover || reduced) return;
+
+    let mouseX = window.innerWidth / 2;
+    let mouseY = window.innerHeight / 2;
+    let ringX = mouseX;
+    let ringY = mouseY;
+    let rafId = 0;
+
+    const handleMove = (e: MouseEvent) => {
+      mouseX = e.clientX;
+      mouseY = e.clientY;
+      setIsVisible(true);
+
+      if (dotRef.current) {
+        dotRef.current.style.transform = `translate3d(${mouseX}px, ${mouseY}px, 0) translate(-50%, -50%)`;
+      }
+
+      const target = e.target as HTMLElement | null;
+      if (!target) return;
+
+      const cursorLabeled = target.closest<HTMLElement>('[data-cursor]');
+      if (cursorLabeled?.dataset.cursor) {
+        setLabel(cursorLabeled.dataset.cursor);
+      } else {
+        setLabel('');
+      }
+
+      setIsHoveringInteractive(
+        Boolean(target.closest('a, button, label, select, input, textarea'))
+      );
+
+      setIsOnDark(Boolean(target.closest('[data-dark-surface="true"]')));
+    };
+
+    const handleLeave = () => setIsVisible(false);
+
+    const animateRing = () => {
+      ringX += (mouseX - ringX) * 0.16;
+      ringY += (mouseY - ringY) * 0.16;
+      if (ringRef.current) {
+        ringRef.current.style.transform = `translate3d(${ringX}px, ${ringY}px, 0) translate(-50%, -50%)`;
+      }
+      rafId = requestAnimationFrame(animateRing);
+    };
+
+    window.addEventListener('mousemove', handleMove, { passive: true });
+    document.addEventListener('mouseleave', handleLeave);
+    rafId = requestAnimationFrame(animateRing);
+
+    return () => {
+      window.removeEventListener('mousemove', handleMove);
+      document.removeEventListener('mouseleave', handleLeave);
+      cancelAnimationFrame(rafId);
+    };
+  }, []);
+
+  const hasLabel = label.length > 0;
+
+  return (
+    <>
+      <div
+        ref={dotRef}
+        aria-hidden="true"
+        className={`solstice-cursor pointer-events-none fixed top-0 left-0 z-[70] h-1.5 w-1.5 rounded-full transition-opacity duration-200 ${
+          isVisible && !hasLabel ? 'opacity-90' : 'opacity-0'
+        } ${isOnDark ? 'bg-[#FAF7F2]' : 'bg-[#1C1917]'}`}
+      />
+      <div
+        ref={ringRef}
+        aria-hidden="true"
+        className={`solstice-cursor pointer-events-none fixed top-0 left-0 z-[70] flex items-center justify-center rounded-full transition-[width,height,background-color,border-color,opacity] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+          !isVisible ? 'opacity-0' : 'opacity-100'
+        } ${
+          hasLabel
+            ? 'h-20 w-20 border border-[#C85A62]/90 bg-[#9E3E44]/95 text-[#FAF7F2] shadow-xl backdrop-blur-xs'
+            : isHoveringInteractive
+              ? `h-12 w-12 border ${
+                  isOnDark
+                    ? 'border-[#FAF7F2]/60 bg-white/5'
+                    : 'border-[#1C1917]/50 bg-black/5'
+                }`
+              : `h-8 w-8 border ${
+                  isOnDark ? 'border-[#FAF7F2]/30' : 'border-[#1C1917]/25'
+                }`
+        }`}
+      >
+        {hasLabel && (
+          <span className="font-mono-code text-[10px] font-medium tracking-[0.14em] uppercase">
+            {label}
+          </span>
+        )}
+      </div>
+    </>
+  );
+}
+
+function ScrollProgress() {
+  const { scrollYProgress } = useScroll();
+  const scaleX = useSpring(scrollYProgress, {
+    stiffness: 180,
+    damping: 30,
+    restDelta: 0.001,
+  });
+
+  return (
+    <motion.div
+      aria-hidden="true"
+      style={{ scaleX }}
+      className="pointer-events-none fixed top-0 right-0 left-0 z-50 h-[2px] origin-left bg-[#C85259]"
     />
-    <meta property="og:title" content="SOLSTICE® Beauty — Atelier Color, Skincare &amp; Scent" />
-    <meta
-      property="og:description"
-      content="감각적인 컬러 립 틴트, 아이 팔레트, 보태니컬 스킨케어와 아틀리에 센트를 선보이는 에디토리얼 코스메틱 스토어."
-    />
-    <meta property="og:type" content="website" />
-    <meta name="twitter:card" content="summary_large_image" />
-    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
-    <link
-      rel="stylesheet"
-      href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css"
-    />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=JetBrains+Mono:wght@400;500;600&family=Noto+Serif+KR:wght@400;500;600;700&family=Outfit:wght@500;600;700&display=swap"
-      rel="stylesheet"
-    />
-  </head>
-  <body class="bg-[#FAF8F5] text-[#1C1917] antialiased selection:bg-[#9E3E44] selection:text-white">
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
-</html>
+  );
+}
+
+/* ============================================================================
+   4. Sticky Blush-Pink Header Navigation
+============================================================================ */
+const NAV_ITEMS = [
+  { href: '#hero', label: '아틀리에' },
+  { href: '#collection', label: '컬렉션' },
+  { href: '#pigment-studio', label: '발색 스튜디오' },
+  { href: '#lookbook', label: '룩북' },
+  { href: '#vanity-table', label: '배니티 필름' },
+  { href: '#consultation', label: '1:1 예약' },
+];
+
+function Navbar({
+  cartCount,
+  onOpenCart,
+}: {
+  cartCount: number;
+  onOpenCart: () => void;
+}) {
+  const [seoulTime, setSeoulTime] = useState('');
+  const [activeHref, setActiveHref] = useState('#hero');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  useEffect(() => {
+    const updateClock = () => {
+      const formatted = new Date().toLocaleTimeString('en-GB', {
+        timeZone: 'Asia/Seoul',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+      setSeoulTime(`SEOUL ${formatted}`);
+    };
+    updateClock();
+    const timer = setInterval(updateClock, 15000);
+    return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    const onScroll = () => {
+      let current = '#hero';
+      NAV_ITEMS.forEach((item) => {
+        const target = document.querySelector<HTMLElement>(item.href);
+        if (!target) return;
+        const rect = target.getBoundingClientRect();
+        if (rect.top <= window.innerHeight * 0.38 && rect.bottom >= 80) {
+          current = item.href;
+        }
+      });
+      setActiveHref(current);
+    };
+
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  return (
+    <>
+      <header className="sticky top-0 z-40 w-full border-b border-[#E7B9C6] bg-[#F7D4DD]/95 text-[#1C1917] backdrop-blur-md transition-colors duration-300">
+        <div className="mx-auto flex h-16 max-w-[1320px] items-center justify-between gap-6 px-6 lg:px-12">
+          <div className="flex items-center gap-4 shrink-0">
+            <a
+              href="#hero"
+              className="font-display-sans text-lg font-semibold tracking-tight transition-opacity duration-200 hover:opacity-80 whitespace-nowrap shrink-0"
+            >
+              SOLSTICE® Beauty
+            </a>
+
+            {seoulTime && (
+              <span className="hidden sm:inline-flex items-center gap-1.5 font-mono-code text-[11px] tracking-[0.08em] tabular-nums text-[#6E5358]">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#C85A62]" />
+                {seoulTime}
+              </span>
+            )}
+          </div>
+
+          <nav
+            aria-label="주요 메뉴"
+            className="hidden lg:flex items-center gap-7 text-xs font-medium"
+          >
+            {NAV_ITEMS.map((item) => {
+              const isActive = activeHref === item.href;
+              return (
+                <a
+                  key={item.href}
+                  href={item.href}
+                  className={`nav-link-underline whitespace-nowrap shrink-0 ${
+                    isActive ? 'is-active' : ''
+                  } ${
+                    isActive
+                      ? 'text-[#1C1917]'
+                      : 'text-[#523B40] hover:text-[#1C1917]'
+                  }`}
+                >
+                  {item.label}
+                </a>
+              );
+            })}
+          </nav>
+
+          <div className="flex items-center gap-2.5 shrink-0">
+            <button
+              type="button"
+              onClick={onOpenCart}
+              className="hover-lift inline-flex items-center gap-2 rounded-lg border border-[#E3B4C2] bg-white/90 px-4 py-2 text-xs font-medium text-[#1C1917] transition-colors hover:border-[#9E3E44] hover:bg-white whitespace-nowrap shrink-0 cursor-pointer"
+            >
+              <ShoppingBag className="h-3.5 w-3.5" aria-hidden="true" />
+              <span>장바구니</span>
+              <span className="font-mono-code tabular-nums text-[#8E2F36]">
+                ({cartCount})
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setIsMobileMenuOpen(true)}
+              aria-label="전체 메뉴 열기"
+              className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E3B4C2] bg-white/90 text-[#1C1917] lg:hidden cursor-pointer"
+            >
+              <Menu className="h-4 w-4" aria-hidden="true" />
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <AnimatePresence>
+        {isMobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25 }}
+            className="fixed inset-0 z-50 flex flex-col justify-between bg-[#12100F] px-6 py-8 text-[#FAF7F2]"
+          >
+            <div className="flex items-center justify-between">
+              <span className="font-display-sans text-lg font-semibold">
+                SOLSTICE® Beauty
+              </span>
+              <button
+                type="button"
+                onClick={() => setIsMobileMenuOpen(false)}
+                aria-label="메뉴 닫기"
+                className="flex h-10 w-10 items-center justify-center rounded-full border border-white/20 text-[#FAF7F2] cursor-pointer"
+              >
+                <X className="h-4 w-4" aria-hidden="true" />
+              </button>
+            </div>
+
+            <nav className="flex flex-col gap-5">
+              {NAV_ITEMS.map((item, idx) => (
+                <a
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="font-serif-kr flex items-baseline gap-4 text-3xl font-medium text-[#FAF7F2]"
+                >
+                  <span className="font-mono-code text-xs text-[#D46A71]">
+                    0{idx + 1}
+                  </span>
+                  <span>{item.label}</span>
+                </a>
+              ))}
+            </nav>
+
+            <div className="border-t border-white/10 pt-5 font-mono-code text-xs text-[#A89F96]">
+              GAROSU-GIL FLAGSHIP ATELIER · {seoulTime}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
+  );
+}
+
+/* ============================================================================
+   5. Hero Section (Looping Mood Film + Parallax + Film Highlight Selector)
+============================================================================ */
+function HeroSection({
+  selectedProduct,
+  onSelectProduct,
+  onOpenShadeModal,
+}: {
+  selectedProduct: BeautyProduct;
+  onSelectProduct: (product: BeautyProduct) => void;
+  onOpenShadeModal: (product: BeautyProduct) => void;
+}) {
+  const sectionRef = useRef<HTMLElement | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const [isPlaying, setIsPlaying] = useState(true);
+  const [videoSrc, setVideoSrc] = useState('./4620941-uhd_4096_2160_25fps.mp4');
+
+  const { scrollYProgress } = useScroll({
+    target: sectionRef,
+    offset: ['start start', 'end start'],
+  });
+
+  const videoY = useTransform(scrollYProgress, [0, 1], ['0%', '18%']);
+  const videoScale = useTransform(scrollYProgress, [0, 1], [1, 1.08]);
+  const contentOpacity = useTransform(scrollYProgress, [0, 0.8], [1, 0.2]);
+  const contentY = useTransform(scrollYProgress, [0, 1], ['0%', '8%']);
+
+  const handleTogglePlayback = () => {
+    const video = videoRef.current;
+    if (!video) return;
+    if (video.paused) {
+      void video.play();
+      setIsPlaying(true);
+    } else {
+      video.pause();
+      setIsPlaying(false);
+    }
+  };
+
+  const handleVideoError = () => {
+    if (
+      videoSrc !== '/assets/aistudio/4620941-uhd_4096_2160_25fps_d41122ea.mp4'
+    ) {
+      setVideoSrc('/assets/aistudio/4620941-uhd_4096_2160_25fps_d41122ea.mp4');
+    }
+  };
+
+  return (
+    <section
+      ref={sectionRef}
+      id="hero"
+      data-dark-surface="true"
+      className="relative flex min-h-[calc(100vh-4rem)] w-full items-center overflow-hidden bg-[#12100F]"
+    >
+      <motion.div
+        style={{ y: videoY, scale: videoScale }}
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 h-full w-full will-change-transform"
+      >
+        <video
+          ref={videoRef}
+          key={videoSrc}
+          src={videoSrc}
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="auto"
+          onError={handleVideoError}
+          className="h-full w-full object-cover opacity-50"
+        />
+      </motion.div>
+
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 bg-[#12100F]/55"
+      />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[#12100F]/85 via-[#12100F]/60 to-[#12100F]/40"
+      />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#12100F]/40 via-transparent to-[#12100F]/80"
+      />
+
+      <motion.div
+        style={{ opacity: contentOpacity, y: contentY }}
+        className="relative z-10 mx-auto w-full max-w-[1320px] px-6 py-12 lg:px-12 lg:py-16"
+      >
+        <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-12 lg:gap-12">
+          <div className="flex flex-col lg:col-span-6">
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0, ease: EASE_OUT }}
+              className="font-mono-code text-xs tracking-[0.18em] text-[#D8CFC6]"
+            >
+              2026 ATELIER BEAUTY <span aria-hidden="true">·</span> GAROSU-GIL
+              BOUTIQUE
+            </motion.p>
+
+            <h1 className="font-serif-kr mt-5 text-[clamp(2.35rem,4.4vw,3.75rem)] font-medium leading-[1.2] tracking-tight text-[#FAF7F2] text-balance">
+              <span className="block overflow-hidden pb-1">
+                <motion.span
+                  initial={{ y: '110%', opacity: 0 }}
+                  animate={{ y: '0%', opacity: 1 }}
+                  transition={{ duration: 0.75, delay: 0.06, ease: EASE_MASK }}
+                  className="block"
+                >
+                  피부 위의 빛과 질감,
+                </motion.span>
+              </span>
+              <span className="block overflow-hidden pb-1">
+                <motion.span
+                  initial={{ y: '110%', opacity: 0 }}
+                  animate={{ y: '0%', opacity: 1 }}
+                  transition={{ duration: 0.75, delay: 0.14, ease: EASE_MASK }}
+                  className="block"
+                >
+                  나만의 <span className="text-[#D46A71]">무드</span>를 그리다.
+                </motion.span>
+              </span>
+            </h1>
+
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.22, ease: EASE_OUT }}
+              className="mt-5 max-w-xl text-[15px] leading-[1.75] text-[#DFD8D0]"
+            >
+              벨벳처럼 가볍게 밀착되는 모브 로즈 립 틴트부터 16구 아틀리에 팔레트,
+              보태니컬 배리어 세럼까지. 솔스티스 뷰티가 제안하는 감각적인 데일리
+              리추얼을 만나보세요.
+            </motion.p>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.3, ease: EASE_OUT }}
+              className="mt-8 flex flex-wrap items-center gap-3.5"
+            >
+              <a
+                href="#collection"
+                style={{ '--curtain-bg': '#7C292F' } as React.CSSProperties}
+                className="meridian-btn inline-flex items-center gap-2.5 rounded-lg bg-[#9E3E44] px-6 py-3.5 text-sm font-medium text-[#FAF7F2] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D46A71] whitespace-nowrap shrink-0"
+              >
+                <span>뷰티 컬렉션 보기</span>
+                <ArrowRight
+                  className="meridian-arrow h-4 w-4"
+                  aria-hidden="true"
+                />
+              </a>
+
+              <button
+                type="button"
+                onClick={() => onOpenShadeModal(selectedProduct)}
+                style={{ '--curtain-bg': '#FAF8F5' } as React.CSSProperties}
+                className="meridian-btn inline-flex items-center justify-center rounded-lg border border-white/30 bg-white/10 px-6 py-3.5 text-sm font-medium text-[#FAF7F2] backdrop-blur-sm hover:border-[#FAF8F5] hover:text-[#1C1917] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white whitespace-nowrap shrink-0 cursor-pointer"
+              >
+                영상 속 제품 탐색
+              </button>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.36, ease: EASE_OUT }}
+              className="my-8 border-t border-white/15"
+            />
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.4, ease: EASE_OUT }}
+            >
+              <p className="font-mono-code mb-3.5 text-[11px] tracking-[0.14em] text-[#CBC2B8]">
+                IN THIS FILM — 영상 속 하이라이트 제품
+              </p>
+
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                {FILM_HIGHLIGHT_PRODUCTS.map((product) => {
+                  const isActive = product.id === selectedProduct.id;
+                  return (
+                    <button
+                      key={product.id}
+                      type="button"
+                      onClick={() => onSelectProduct(product)}
+                      className={`hover-lift group relative flex flex-col items-start rounded-lg px-4 py-3.5 text-left backdrop-blur-md cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D46A71] ${
+                        isActive
+                          ? 'border border-white/55 bg-black/65 text-[#FAF7F2] shadow-lg'
+                          : 'border border-white/15 bg-black/35 text-[#DED7CE] hover:border-white/35 hover:bg-black/50'
+                      }`}
+                    >
+                      <span className="font-mono-code text-[11px] text-[#BFB5AA]">
+                        {product.indexLabel} · {product.categoryTag}
+                      </span>
+                      <span className="mt-1.5 w-full truncate text-[13px] font-medium text-[#FAF7F2]">
+                        {product.shortName}
+                      </span>
+                      {isActive && (
+                        <motion.span
+                          layoutId="hero-highlight-indicator"
+                          transition={{ duration: 0.25, ease: EASE_OUT }}
+                          aria-hidden="true"
+                          className="mt-2.5 block h-[2px] w-full rounded-full bg-[#C85259]"
+                        />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </motion.div>
+          </div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2, ease: EASE_OUT }}
+            className="lg:col-span-6"
+          >
+            <div className="hover-card-lift overflow-hidden rounded-2xl border border-white/15 bg-[#161414] shadow-2xl">
+              <div
+                data-cursor="SHADE"
+                onClick={() => onOpenShadeModal(selectedProduct)}
+                className="relative aspect-[4/3] w-full cursor-pointer overflow-hidden bg-[#181515]"
+              >
+                <AnimatePresence mode="wait">
+                  <motion.img
+                    key={selectedProduct.id}
+                    src={selectedProduct.image}
+                    alt={selectedProduct.name}
+                    referrerPolicy="no-referrer"
+                    initial={{ opacity: 0, scale: 1.04 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.99 }}
+                    transition={{ duration: 0.35, ease: EASE_OUT }}
+                    className="h-full w-full object-cover"
+                  />
+                </AnimatePresence>
+                <div
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/25"
+                />
+
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleTogglePlayback();
+                  }}
+                  aria-label={
+                    isPlaying ? '배경 영상 일시정지' : '배경 영상 재생'
+                  }
+                  title={isPlaying ? '배경 영상 일시정지' : '배경 영상 재생'}
+                  className="hover-lift absolute top-4 right-4 flex h-10 w-10 items-center justify-center rounded-full border border-white/25 bg-black/55 text-[#FAF7F2] backdrop-blur-md hover:bg-black/80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white cursor-pointer"
+                >
+                  {isPlaying ? (
+                    <Pause className="h-4 w-4" aria-hidden="true" />
+                  ) : (
+                    <Play
+                      className="h-4 w-4 translate-x-[1px]"
+                      aria-hidden="true"
+                    />
+                  )}
+                </button>
+              </div>
+
+              <div className="flex items-center justify-between border-t border-white/10 bg-[#12100F] px-6 py-3">
+                <span className="font-mono-code text-xs tracking-[0.14em] text-[#D8CFC6] tabular-nums">
+                  ATELIER MOOD FILM · {selectedProduct.filmTimestamp}
+                </span>
+                <span className="font-mono-code text-[11px] text-[#9F958B]">
+                  {isPlaying ? 'PLAYING' : 'PAUSED'}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between gap-4 bg-[#FAF8F5] px-6 py-5 text-[#1C1917]">
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={selectedProduct.id}
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -6 }}
+                    transition={{ duration: 0.25, ease: EASE_OUT }}
+                    className="min-w-0"
+                  >
+                    <p className="font-mono-code text-xs text-[#9E3E44]">
+                      {selectedProduct.code} · {selectedProduct.weight}
+                    </p>
+                    <h2 className="mt-1 truncate text-lg font-semibold tracking-tight text-[#1C1917]">
+                      {selectedProduct.name}
+                    </h2>
+                  </motion.div>
+                </AnimatePresence>
+
+                <div className="flex items-center gap-4 shrink-0">
+                  <span className="font-mono-code text-base font-medium tabular-nums text-[#1C1917]">
+                    {formatKRW(selectedProduct.price)}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => onOpenShadeModal(selectedProduct)}
+                    className="hover-lift rounded-lg bg-[#1C1917] px-4 py-2.5 text-xs font-medium text-[#FAF8F5] hover:bg-[#332E2B] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9E3E44] whitespace-nowrap shrink-0 cursor-pointer"
+                  >
+                    쉐이드 선택
+                  </button>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </motion.div>
+    </section>
+  );
+}
+
+/* ============================================================================
+   6. Editorial Marquee Strip
+============================================================================ */
+const MARQUEE_ITEMS = [
+  { code: '01', text: 'GAROSU-GIL ATELIER' },
+  { code: '02', text: '100% VEGAN FORMULA' },
+  { code: '03', text: 'CERAMIDE NP BARRIER' },
+  { code: '04', text: 'SOFT MATTE VELVET' },
+  { code: '05', text: 'CLINICALLY TESTED 48H' },
+  { code: '06', text: 'SMALL-BATCH CRAFT' },
+  { code: '07', text: 'CRUELTY-FREE STUDIO' },
+  { code: '08', text: 'SEOUL BOUTIQUE 2026' },
+];
+
+function EditorialMarquee() {
+  const repeated = [...MARQUEE_ITEMS, ...MARQUEE_ITEMS];
+
+  return (
+    <section
+      aria-label="솔스티스 뷰티 아틀리에 키워드"
+      className="marquee-wrapper border-y border-[#E5DFD6] bg-[#FAF8F5] py-5"
+    >
+      <div className="mx-auto flex max-w-[1320px] items-center gap-8 px-6 lg:px-12">
+        <div className="hidden shrink-0 items-center gap-2 sm:flex">
+          <span className="h-1.5 w-1.5 rounded-full bg-[#9E3E44]" />
+          <span className="font-mono-code text-[11px] tracking-[0.14em] text-[#7D746B]">
+            ATELIER STANDARDS
+          </span>
+        </div>
+
+        <div className="marquee-mask flex-1 overflow-hidden">
+          <div className="marquee-track items-center gap-10">
+            {repeated.map((item, idx) => (
+              <div
+                key={`${item.code}-${idx}`}
+                className="flex shrink-0 items-center gap-3 opacity-70 transition-opacity duration-300 hover:opacity-100"
+              >
+                <span className="font-mono-code text-[10px] text-[#9E3E44]">
+                  {item.code}
+                </span>
+                <span className="font-display-sans text-sm font-semibold tracking-[0.06em] text-[#1C1917] whitespace-nowrap">
+                  {item.text}
+                </span>
+                <span aria-hidden="true" className="ml-4 text-[#D6CEC5]">
+                  /
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ============================================================================
+   7. Section 01 — Curation Product Grid + Filter + Search + Wishlist
+============================================================================ */
+function CurationSection({
+  onOpenShadeModal,
+}: {
+  onOpenShadeModal: (product: BeautyProduct, initialShadeId?: string) => void;
+}) {
+  const [activeCategory, setActiveCategory] = useState<CurationCategory>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showWishlistOnly, setShowWishlistOnly] = useState(false);
+  const [wishlistIds, setWishlistIds] = useState<string[]>([]);
+  const [selectedShades, setSelectedShades] = useState<Record<string, string>>(
+    () => {
+      const initial: Record<string, string> = {};
+      CURATION_PRODUCTS.forEach((p) => {
+        if (p.shades[0]) initial[p.id] = p.shades[0].id;
+      });
+      return initial;
+    }
+  );
+
+  const filterTabs: { key: CurationCategory; label: string; count: number }[] = [
+    { key: 'all', label: '전체', count: CURATION_PRODUCTS.length },
+    {
+      key: 'lip',
+      label: '립 메이크업',
+      count: CURATION_PRODUCTS.filter((p) => p.curationCategory === 'lip').length,
+    },
+    {
+      key: 'eye-base',
+      label: '아이 · 베이스',
+      count: CURATION_PRODUCTS.filter((p) => p.curationCategory === 'eye-base')
+        .length,
+    },
+    {
+      key: 'skincare',
+      label: '스킨케어',
+      count: CURATION_PRODUCTS.filter((p) => p.curationCategory === 'skincare')
+        .length,
+    },
+    {
+      key: 'brush-scent',
+      label: '브러시 · 센트',
+      count: CURATION_PRODUCTS.filter(
+        (p) => p.curationCategory === 'brush-scent'
+      ).length,
+    },
+  ];
+
+  const toggleWishlist = (productId: string) => {
+    setWishlistIds((prev) =>
+      prev.includes(productId)
+        ? prev.filter((id) => id !== productId)
+        : [...prev, productId]
+    );
+  };
+
+  const handleSelectShade = (productId: string, shadeId: string) => {
+    setSelectedShades((prev) => ({ ...prev, [productId]: shadeId }));
+  };
+
+  const filteredProducts = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    return CURATION_PRODUCTS.filter((product) => {
+      if (
+        activeCategory !== 'all' &&
+        product.curationCategory !== activeCategory
+      ) {
+        return false;
+      }
+      if (showWishlistOnly && !wishlistIds.includes(product.id)) {
+        return false;
+      }
+      if (!query) return true;
+      return (
+        product.name.toLowerCase().includes(query) ||
+        product.categoryTag.toLowerCase().includes(query) ||
+        product.shades.some((s) => s.name.toLowerCase().includes(query))
+      );
+    });
+  }, [activeCategory, searchQuery, showWishlistOnly, wishlistIds]);
+
+  return (
+    <section
+      id="collection"
+      className="border-t border-[#E5DFD6] bg-[#FAF8F5] py-20 lg:py-24"
+    >
+      <div className="mx-auto max-w-[1320px] px-6 lg:px-12">
+        <motion.div
+          initial={{ opacity: 0, y: 18 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.2 }}
+          transition={{ duration: 0.55, ease: EASE_OUT }}
+          className="flex flex-col justify-between gap-6 lg:flex-row lg:items-end"
+        >
+          <div>
+            <p className="font-mono-code text-xs tracking-[0.14em] text-[#7D746B]">
+              01. BEAUTY COLLECTION
+            </p>
+            <h2 className="font-serif-kr mt-2 text-3xl font-medium tracking-tight text-[#1C1917] sm:text-4xl">
+              컬러와 스킨케어 큐레이션
+            </h2>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2.5">
+            <div className="relative flex-1 sm:flex-none">
+              <Search
+                className="pointer-events-none absolute top-1/2 left-3.5 h-3.5 w-3.5 -translate-y-1/2 text-[#8E857C]"
+                aria-hidden="true"
+              />
+              <input
+                type="search"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="제품 또는 쉐이드 검색"
+                aria-label="제품 또는 쉐이드 검색"
+                className="h-10 w-full rounded-lg border border-[#E0D9CE] bg-white pl-9 pr-3.5 text-xs text-[#1C1917] placeholder:text-[#8E857C] focus:border-[#1C1917] focus:outline-none sm:w-56"
+              />
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setShowWishlistOnly((prev) => !prev)}
+              aria-pressed={showWishlistOnly}
+              className={`hover-lift inline-flex h-10 items-center gap-2 rounded-lg border px-4 text-xs font-medium whitespace-nowrap shrink-0 cursor-pointer ${
+                showWishlistOnly
+                  ? 'border-[#9E3E44] bg-[#9E3E44] text-[#FAF8F5]'
+                  : 'border-[#E0D9CE] bg-white text-[#1C1917] hover:border-[#1C1917]'
+              }`}
+            >
+              <Heart
+                className={`h-3.5 w-3.5 ${showWishlistOnly ? 'fill-current' : ''}`}
+                aria-hidden="true"
+              />
+              <span className="tabular-nums">관심 ({wishlistIds.length})</span>
+            </button>
+          </div>
+        </motion.div>
+
+        <div
+          role="tablist"
+          aria-label="카테고리 필터"
+          className="mt-7 inline-flex flex-wrap items-center gap-1.5 rounded-xl bg-[#EFEAE2] p-1"
+        >
+          {filterTabs.map((tab) => {
+            const isSelected = activeCategory === tab.key;
+            return (
+              <button
+                key={tab.key}
+                type="button"
+                role="tab"
+                aria-selected={isSelected}
+                onClick={() => setActiveCategory(tab.key)}
+                className={`relative inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-xs font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+                  isSelected
+                    ? 'text-[#FAF8F5]'
+                    : 'text-[#625A53] hover:text-[#1C1917]'
+                }`}
+              >
+                {isSelected && (
+                  <motion.span
+                    layoutId="curation-category-pill"
+                    transition={{ duration: 0.25, ease: EASE_OUT }}
+                    className="absolute inset-0 rounded-lg bg-[#1C1917] shadow-xs"
+                  />
+                )}
+                <span className="relative z-10">{tab.label}</span>
+                <span
+                  className={`relative z-10 font-mono-code text-[11px] tabular-nums ${
+                    isSelected ? 'text-[#C8BFB5]' : 'text-[#8E857C]'
+                  }`}
+                >
+                  {tab.count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {filteredProducts.length === 0 ? (
+          <div className="mt-12 rounded-2xl border border-[#E6E0D7] bg-white px-6 py-16 text-center">
+            <p className="text-sm text-[#625A53]">
+              조건에 해당하는 제품이 없습니다.
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setActiveCategory('all');
+                setSearchQuery('');
+                setShowWishlistOnly(false);
+              }}
+              className="mt-4 rounded-lg border border-[#1C1917] px-4 py-2 text-xs font-medium text-[#1C1917] hover:bg-[#1C1917] hover:text-white cursor-pointer"
+            >
+              전체 제품 보기
+            </button>
+          </div>
+        ) : (
+          <div className="mt-10 grid grid-cols-1 gap-x-8 gap-y-12 sm:grid-cols-2 lg:grid-cols-3">
+            {filteredProducts.map((product, index) => {
+              const isWishlisted = wishlistIds.includes(product.id);
+              const activeShadeId =
+                selectedShades[product.id] || product.shades[0]?.id;
+              const activeShade =
+                product.shades.find((s) => s.id === activeShadeId) ||
+                product.shades[0];
+
+              return (
+                <motion.article
+                  key={product.id}
+                  initial={{ opacity: 0, y: 18 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, amount: 0.12 }}
+                  transition={{
+                    duration: 0.5,
+                    delay: (index % 3) * 0.06,
+                    ease: EASE_OUT,
+                  }}
+                  className="hover-card-lift group flex flex-col rounded-2xl"
+                >
+                  <div
+                    data-cursor="VIEW"
+                    onClick={() => onOpenShadeModal(product, activeShade?.id)}
+                    className="relative aspect-[4/3] w-full cursor-pointer overflow-hidden rounded-2xl bg-[#EAE5DC]"
+                  >
+                    <img
+                      src={product.image}
+                      alt={product.name}
+                      referrerPolicy="no-referrer"
+                      className="h-full w-full object-cover transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.04]"
+                    />
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleWishlist(product.id);
+                      }}
+                      aria-label={
+                        isWishlisted
+                          ? `${product.name} 관심 해제`
+                          : `${product.name} 관심 추가`
+                      }
+                      className="hover-lift absolute top-3.5 right-3.5 flex h-9 w-9 items-center justify-center rounded-full border border-black/5 bg-white/95 text-[#1C1917] shadow-xs backdrop-blur-xs hover:bg-white cursor-pointer"
+                    >
+                      <Heart
+                        className={`h-4 w-4 ${
+                          isWishlisted
+                            ? 'fill-[#9E3E44] text-[#9E3E44]'
+                            : 'text-[#1C1917]'
+                        }`}
+                        aria-hidden="true"
+                      />
+                    </button>
+                  </div>
+
+                  <div className="mt-4 flex items-center justify-between gap-2">
+                    <p className="font-mono-code text-[11px] tracking-[0.06em] text-[#7D746B]">
+                      {product.categoryTag}
+                    </p>
+                    {product.editorialTag && (
+                      <span className="text-[11px] font-medium text-[#9E3E44]">
+                        {product.editorialTag}
+                      </span>
+                    )}
+                  </div>
+
+                  <h3 className="mt-1 text-base font-semibold tracking-tight text-[#1C1917]">
+                    {product.name}
+                  </h3>
+
+                  <div className="mt-3 flex items-center gap-2.5">
+                    <div className="flex items-center gap-1.5">
+                      {product.shades.map((shade) => {
+                        const isSelected = shade.id === activeShade?.id;
+                        return (
+                          <button
+                            key={shade.id}
+                            type="button"
+                            onClick={() =>
+                              handleSelectShade(product.id, shade.id)
+                            }
+                            aria-label={`${shade.name} 선택`}
+                            className={`h-4.5 w-4.5 rounded-full border border-black/15 transition-transform duration-200 cursor-pointer ${
+                              isSelected
+                                ? 'scale-110 ring-1 ring-[#1C1917] ring-offset-2 ring-offset-[#FAF8F5]'
+                                : 'hover:scale-110'
+                            }`}
+                            style={{ backgroundColor: shade.hex }}
+                          />
+                        );
+                      })}
+                    </div>
+                    {activeShade && (
+                      <span className="truncate text-xs text-[#665E57]">
+                        {activeShade.name}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="mt-4 flex items-center justify-between border-t border-[#E6E0D7] pt-3.5">
+                    <span className="font-mono-code text-[15px] font-semibold tabular-nums text-[#1C1917]">
+                      {formatKRW(product.price)}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => onOpenShadeModal(product, activeShade?.id)}
+                      className="nav-link-underline inline-flex items-center gap-1 text-xs font-medium text-[#1C1917] hover:text-[#9E3E44] cursor-pointer"
+                    >
+                      <span>상세 &amp; 쉐이드</span>
+                      <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
+                    </button>
+                  </div>
+                </motion.article>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+/* ============================================================================
+   8. Section 02 — Interactive Pigment Studio
+============================================================================ */
+const SKIN_TONES = [
+  { id: 'cool-19', label: '19호 쿨 포슬린', hex: '#F3DFD7', shadow: '#DFC0B6' },
+  { id: 'neutral-21', label: '21호 뉴트럴', hex: '#EED6C4', shadow: '#D6B59E' },
+  { id: 'warm-23', label: '23호 웜 샌드', hex: '#DEC0A3', shadow: '#C29D7B' },
+  { id: 'deep-25', label: '25호 딥 앰버', hex: '#BD9474', shadow: '#9C7050' },
+];
+
+const LIGHTING_MODES = [
+  { id: 'daylight', label: '자연광', filter: 'brightness(1.04)' },
+  { id: 'atelier', label: '실내 웜 라이트', filter: 'sepia(0.14) saturate(1.08)' },
+  { id: 'evening', label: '이브닝 무드', filter: 'brightness(0.88) contrast(1.1)' },
+] as const;
+
+const STUDIO_LIP_PRODUCT = CURATION_PRODUCTS[0];
+
+function PigmentStudioSection({
+  onAddToCart,
+}: {
+  onAddToCart: (product: BeautyProduct, shade: ProductShade) => void;
+}) {
+  const [skinId, setSkinId] = useState(SKIN_TONES[1].id);
+  const [lightingId, setLightingId] =
+    useState<(typeof LIGHTING_MODES)[number]['id']>('daylight');
+  const [selectedShade, setSelectedShade] = useState<ProductShade>(
+    STUDIO_LIP_PRODUCT.shades[0]
+  );
+
+  const skin = SKIN_TONES.find((t) => t.id === skinId) || SKIN_TONES[1];
+  const lighting =
+    LIGHTING_MODES.find((l) => l.id === lightingId) || LIGHTING_MODES[0];
+
+  return (
+    <section
+      id="pigment-studio"
+      className="border-t border-[#E5DFD6] bg-[#F3EFE8] py-20 lg:py-24"
+    >
+      <div className="mx-auto max-w-[1320px] px-6 lg:px-12">
+        <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-12 lg:gap-14">
+          <div className="lg:col-span-6">
+            <div
+              style={{
+                background: `radial-gradient(circle at 30% 25%, #FAF3EE, ${skin.hex} 60%, ${skin.shadow} 100%)`,
+                filter: lighting.filter,
+              }}
+              className="relative flex aspect-[4/3] w-full flex-col justify-between overflow-hidden rounded-2xl border border-[#DFD8CE] p-6 shadow-md transition-all duration-500"
+            >
+              <div className="flex items-center justify-between">
+                <span className="rounded-md bg-black/60 px-3 py-1 font-mono-code text-[11px] text-[#FAF7F2] backdrop-blur-xs">
+                  {skin.label} · {lighting.label}
+                </span>
+                <span className="rounded-md bg-black/60 px-3 py-1 font-mono-code text-[11px] text-[#E6B8BC] backdrop-blur-xs">
+                  {selectedShade.hex.toUpperCase()}
+                </span>
+              </div>
+
+              <div className="my-auto flex items-center justify-center">
+                <motion.div
+                  key={selectedShade.id}
+                  initial={{ scale: 0.94, opacity: 0.7 }}
+                  animate={{ scale: 1, opacity: 0.9 }}
+                  transition={{ duration: 0.35 }}
+                  style={{
+                    background: `radial-gradient(ellipse at 35% 40%, ${selectedShade.hex}, ${selectedShade.hex}d8 64%, transparent 98%)`,
+                  }}
+                  className="h-24 w-64 -rotate-3 rounded-[48%_52%_60%_40%/58%_42%_58%_42%] shadow-[0_14px_28px_rgba(35,14,18,0.2)] sm:h-28 sm:w-80"
+                />
+              </div>
+
+              <p className="text-xs font-medium text-[#1C1917]/80">
+                {selectedShade.name} — {selectedShade.description}
+              </p>
+            </div>
+          </div>
+
+          <div className="lg:col-span-6">
+            <p className="font-mono-code text-xs tracking-[0.16em] text-[#9E3E44]">
+              02. INTERACTIVE SHADE STUDIO
+            </p>
+            <h2 className="font-serif-kr mt-2.5 text-3xl font-medium tracking-tight text-[#1C1917] sm:text-4xl">
+              피부 톤과 조명에 맞춘 실시간 발색 테스트
+            </h2>
+            <p className="mt-3 text-sm leading-relaxed text-[#575049]">
+              내 피부 톤과 조명을 선택하고 벨벳 립 틴트의 실제 발색 무드를
+              바로 확인해 보세요.
+            </p>
+
+            <div className="mt-7 space-y-5">
+              <div>
+                <span className="font-mono-code text-[11px] text-[#7D746B]">
+                  01 · 피부 톤
+                </span>
+                <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                  {SKIN_TONES.map((tone) => {
+                    const active = tone.id === skin.id;
+                    return (
+                      <button
+                        key={tone.id}
+                        type="button"
+                        onClick={() => setSkinId(tone.id)}
+                        className={`flex items-center gap-2 rounded-xl border px-3 py-2.5 text-xs font-medium transition-colors cursor-pointer ${
+                          active
+                            ? 'border-[#1C1917] bg-white text-[#1C1917] shadow-xs'
+                            : 'border-[#E0D9CE] bg-white/60 text-[#625A53] hover:border-[#B5ACA1]'
+                        }`}
+                      >
+                        <span
+                          className="h-4 w-4 shrink-0 rounded-full border border-black/10"
+                          style={{ backgroundColor: tone.hex }}
+                        />
+                        <span className="truncate">{tone.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div>
+                <span className="font-mono-code text-[11px] text-[#7D746B]">
+                  02 · 조명 환경
+                </span>
+                <div className="mt-2 grid grid-cols-3 gap-2">
+                  {LIGHTING_MODES.map((mode) => {
+                    const active = mode.id === lighting.id;
+                    const Icon =
+                      mode.id === 'daylight'
+                        ? Sun
+                        : mode.id === 'atelier'
+                          ? Sunset
+                          : Moon;
+                    return (
+                      <button
+                        key={mode.id}
+                        type="button"
+                        onClick={() => setLightingId(mode.id)}
+                        className={`inline-flex items-center justify-center gap-1.5 rounded-xl border py-2.5 text-xs font-medium transition-colors cursor-pointer ${
+                          active
+                            ? 'border-[#1C1917] bg-[#1C1917] text-[#FAF8F5]'
+                            : 'border-[#E0D9CE] bg-white text-[#575049] hover:border-[#1C1917]'
+                        }`}
+                      >
+                        <Icon className="h-3.5 w-3.5" aria-hidden="true" />
+                        <span>{mode.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center justify-between gap-4 border-t border-[#DFD8CE] pt-5">
+                <div className="flex flex-wrap gap-2">
+                  {STUDIO_LIP_PRODUCT.shades.map((shade) => {
+                    const active = shade.id === selectedShade.id;
+                    return (
+                      <button
+                        key={shade.id}
+                        type="button"
+                        onClick={() => setSelectedShade(shade)}
+                        className={`inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-medium transition-colors cursor-pointer ${
+                          active
+                            ? 'border-[#1C1917] bg-white text-[#1C1917]'
+                            : 'border-[#E0D9CE] bg-white/50 text-[#625A53]'
+                        }`}
+                      >
+                        <span
+                          className="h-3.5 w-3.5 rounded-full border border-black/15"
+                          style={{ backgroundColor: shade.hex }}
+                        />
+                        <span>{shade.name}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => onAddToCart(STUDIO_LIP_PRODUCT, selectedShade)}
+                  style={{ '--curtain-bg': '#1C1917' } as React.CSSProperties}
+                  className="meridian-btn inline-flex items-center gap-2 rounded-xl bg-[#9E3E44] px-5 py-3 text-xs font-medium text-[#FAF7F2] whitespace-nowrap shrink-0 cursor-pointer"
+                >
+                  <Plus className="h-3.5 w-3.5" aria-hidden="true" />
+                  <span>
+                    {formatKRW(STUDIO_LIP_PRODUCT.price)} 장바구니 담기
+                  </span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ============================================================================
+   9. Section 03 — Horizontal Lookbook Archive
+============================================================================ */
+interface LookbookSlide {
+  id: string;
+  index: string;
+  tag: string;
+  title: string;
+  subtitle: string;
+  image: string;
+  product: BeautyProduct;
+}
+
+const LOOKBOOK_SLIDES: LookbookSlide[] = [
+  {
+    id: 'look-01',
+    index: 'LOOK 01',
+    tag: 'SOFT VELVET LIP',
+    title: '더스티 모브 로즈의 잔상',
+    subtitle: '입술 주름 사이를 매끈히 메우는 공기 같은 소프트 매트 피그먼트',
+    image: '/src/assets/images/lookbook_mauve_editorial_1795159691550.jpg',
+    product: CURATION_PRODUCTS[0],
+  },
+  {
+    id: 'look-02',
+    index: 'LOOK 02',
+    tag: 'SHIMMER EYE ARCHIVE',
+    title: '로즈우드 & 플럼 레이어링',
+    subtitle: '매트 음영부터 습식 글리터까지 16가지 톤온톤 스펙트럼',
+    image: '/src/assets/images/lookbook_palette_shimmer_1795159691652.jpg',
+    product: CURATION_PRODUCTS[1],
+  },
+  {
+    id: 'look-03',
+    index: 'LOOK 03',
+    tag: 'BOTANICAL BARRIER',
+    title: '유칼립투스 & 세라마이드 광채',
+    subtitle: '베이스 메이크업 전 피부 속 수분과 윤기를 채우는 보태니컬 프렙',
+    image: '/src/assets/images/lookbook_botanical_drops_1795159692284.jpg',
+    product: CURATION_PRODUCTS[3],
+  },
+  {
+    id: 'look-04',
+    index: 'LOOK 04',
+    tag: 'ATELIER HOME SCENT',
+    title: '가로수길 아틀리에 상탈 캔들',
+    subtitle: '따뜻한 앰버 글라스에 담은 우디·머스크 시그니처 아로마 리추얼',
+    image: '/src/assets/images/lookbook_scent_sanctuary_1795159691354.jpg',
+    product: CURATION_PRODUCTS[5],
+  },
+];
+
+function HorizontalLookbookSection({
+  onOpenShadeModal,
+}: {
+  onOpenShadeModal: (product: BeautyProduct) => void;
+}) {
+  const containerRef = useRef<HTMLElement | null>(null);
+  const stickyRef = useRef<HTMLDivElement | null>(null);
+  const trackRef = useRef<HTMLDivElement | null>(null);
+  const [activeIndex, setActiveIndex] = useState(1);
+  const [maxShiftPx, setMaxShiftPx] = useState(1400);
+
+  useEffect(() => {
+    const updateMeasure = () => {
+      if (!stickyRef.current || !trackRef.current) return;
+      const viewportWidth = stickyRef.current.clientWidth;
+      const totalTrackWidth = trackRef.current.scrollWidth;
+      setMaxShiftPx(Math.max(0, totalTrackWidth - viewportWidth));
+    };
+
+    updateMeasure();
+    const ro = new ResizeObserver(updateMeasure);
+    if (stickyRef.current) ro.observe(stickyRef.current);
+    if (trackRef.current) ro.observe(trackRef.current);
+    window.addEventListener('resize', updateMeasure);
+
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', updateMeasure);
+    };
+  }, []);
+
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ['start start', 'end end'],
+  });
+
+  const trackX = useTransform(scrollYProgress, [0.02, 0.92], [0, -maxShiftPx]);
+  const progressWidth = useTransform(scrollYProgress, [0.02, 0.92], [0, 1]);
+
+  useMotionValueEvent(scrollYProgress, 'change', (latest) => {
+    const normalized = Math.min(1, Math.max(0, (latest - 0.02) / 0.9));
+    const next = Math.min(4, Math.max(1, Math.floor(normalized * 3.99) + 1));
+    setActiveIndex(next);
+  });
+
+  return (
+    <section
+      ref={containerRef}
+      id="lookbook"
+      data-dark-surface="true"
+      aria-label="가로 스크롤 시즌 룩북"
+      className="relative bg-[#141211] text-[#FAF7F2] md:h-[220vh]"
+    >
+      <div
+        ref={stickyRef}
+        className="hidden md:sticky md:top-0 md:flex md:h-screen md:flex-col md:justify-between md:overflow-hidden md:pt-24 md:pb-12"
+      >
+        <div className="mx-auto flex w-full max-w-[1320px] items-end justify-between gap-8 px-6 lg:px-12">
+          <div>
+            <p className="font-mono-code text-xs tracking-[0.16em] text-[#D46A71]">
+              03. LOOKBOOK ARCHIVE · HORIZONTAL SCROLL
+            </p>
+            <h2 className="font-serif-kr mt-2 text-3xl font-medium tracking-tight text-[#FAF7F2] lg:text-4xl">
+              스크롤로 넘겨보는 아틀리에 무드 필름
+            </h2>
+          </div>
+
+          <div className="flex items-center gap-5 shrink-0">
+            <div className="h-[2px] w-36 overflow-hidden rounded-full bg-white/15">
+              <motion.div
+                style={{ scaleX: progressWidth, transformOrigin: 'left' }}
+                className="h-full w-full bg-[#C85A62]"
+              />
+            </div>
+            <span className="font-mono-code text-xs tabular-nums text-[#D8CFC6]">
+              0{activeIndex} / 04
+            </span>
+          </div>
+        </div>
+
+        <motion.div
+          ref={trackRef}
+          style={{ x: trackX }}
+          className="flex w-max gap-8 pl-6 pr-12 will-change-transform lg:pl-[max(3rem,calc((100vw-1320px)/2+3rem))] lg:pr-[max(3rem,calc((100vw-1320px)/2+3rem))]"
+        >
+          {LOOKBOOK_SLIDES.map((slide) => (
+            <article
+              key={slide.id}
+              data-cursor="OPEN"
+              onClick={() => onOpenShadeModal(slide.product)}
+              className="group relative flex w-[460px] shrink-0 cursor-pointer flex-col overflow-hidden rounded-2xl border border-white/12 bg-[#1D1A19] transition-colors duration-300 hover:border-white/30 lg:w-[540px]"
+            >
+              <div className="relative aspect-[16/10] w-full overflow-hidden bg-[#181515]">
+                <img
+                  src={slide.image}
+                  alt={slide.title}
+                  referrerPolicy="no-referrer"
+                  className="h-full w-full object-cover transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.06]"
+                />
+                <div
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#1D1A19]/80 via-transparent to-black/25"
+                />
+                <span className="font-mono-code absolute top-4 left-4 rounded-md border border-white/20 bg-black/60 px-3 py-1 text-[11px] tracking-[0.12em] text-[#FAF7F2] backdrop-blur-md">
+                  {slide.index} · {slide.tag}
+                </span>
+              </div>
+
+              <div className="flex flex-1 items-end justify-between gap-4 p-5 lg:p-6">
+                <div className="min-w-0">
+                  <h3 className="font-serif-kr text-xl font-medium tracking-tight text-[#FAF7F2] lg:text-2xl">
+                    {slide.title}
+                  </h3>
+                  <p className="mt-1.5 text-xs leading-relaxed text-[#A89F96]">
+                    {slide.subtitle}
+                  </p>
+                  <p className="font-mono-code mt-3 text-xs tabular-nums text-[#E6B8BC]">
+                    {slide.product.name} · {formatKRW(slide.product.price)}
+                  </p>
+                </div>
+
+                <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/20 bg-white/5 text-[#FAF7F2] transition-all duration-300 group-hover:rotate-45 group-hover:border-[#C85A62] group-hover:bg-[#9E3E44]">
+                  <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
+                </span>
+              </div>
+            </article>
+          ))}
+        </motion.div>
+
+        <div className="mx-auto flex w-full max-w-[1320px] items-center justify-between px-6 font-mono-code text-[11px] text-[#8E857C] lg:px-12">
+          <span>CARDS LINK DIRECTLY TO SHADE &amp; TEXTURE MODAL</span>
+          <span>KEEP SCROLLING TO CONTINUE</span>
+        </div>
+      </div>
+
+      <div className="px-6 py-16 md:hidden">
+        <p className="font-mono-code text-xs tracking-[0.16em] text-[#D46A71]">
+          HORIZONTAL ARCHIVE · 2026 LOOKBOOK
+        </p>
+        <h2 className="font-serif-kr mt-2 text-3xl font-medium tracking-tight text-[#FAF7F2]">
+          아틀리에 무드 필름 룩북
+        </h2>
+
+        <div className="mt-8 flex snap-x snap-mandatory gap-4 overflow-x-auto pb-4">
+          {LOOKBOOK_SLIDES.map((slide) => (
+            <article
+              key={slide.id}
+              onClick={() => onOpenShadeModal(slide.product)}
+              className="w-[82vw] shrink-0 snap-start overflow-hidden rounded-2xl border border-white/12 bg-[#1D1A19]"
+            >
+              <div className="relative aspect-[4/3] w-full overflow-hidden">
+                <img
+                  src={slide.image}
+                  alt={slide.title}
+                  referrerPolicy="no-referrer"
+                  className="h-full w-full object-cover"
+                />
+                <span className="font-mono-code absolute top-3 left-3 rounded-md bg-black/70 px-2.5 py-1 text-[10px] text-[#FAF7F2]">
+                  {slide.index}
+                </span>
+              </div>
+              <div className="p-5">
+                <h3 className="font-serif-kr text-xl font-medium text-[#FAF7F2]">
+                  {slide.title}
+                </h3>
+                <p className="mt-1.5 text-xs text-[#A89F96]">{slide.subtitle}</p>
+                <p className="font-mono-code mt-3 text-xs font-medium text-[#E6B8BC]">
+                  {formatKRW(slide.product.price)} · 상세 보기 →
+                </p>
+              </div>
+            </article>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ============================================================================
+   10. Section 04 — Interactive Vanity Table (3 Shake-Free Custom Films)
+============================================================================ */
+interface VanityFilmItem {
+  id: 'film-1' | 'film-2' | 'film-3';
+  number: string;
+  badgeTitle: string;
+  tabLabel: string;
+  videoSrc: string;
+  posterImage: string;
+  product: BeautyProduct;
+  englishSubtitle: string;
+  description: string;
+  specs: { label: string; valueLabel: string; percent: number }[];
+  ingredients: string;
+}
+
+const VANITY_FILMS: VanityFilmItem[] = [
+  {
+    id: 'film-1',
+    number: '1',
+    badgeTitle: 'Film 01 / 03 · 세럼 · 괄사 리추얼',
+    tabLabel: '01 · 배리어 보태니컬 세럼',
+    videoSrc: '/assets/videos/solstice_film_01_serum.mp4',
+    posterImage: '/src/assets/images/film01_serum_wide_1795160963499.jpg',
+    product: CURATION_PRODUCTS[3],
+    englishSubtitle: 'Amber Gold Botanical Repair Serum',
+    description:
+      '메이크업 전 피부 결을 정돈하고 속건조를 채워주는 고농축 보태니컬 오일-인-세럼입니다. 끈적임 없는 산뜻한 흡수감으로 파운데이션이나 쿠션의 밀착력을 한층 높여줍니다.',
+    specs: [
+      { label: '장벽 진정', valueLabel: 'Ceramide NP', percent: 92 },
+      { label: '보습 지속력', valueLabel: '48h Moisture', percent: 88 },
+      { label: '메이크업 궁합', valueLabel: 'Glow Prep', percent: 95 },
+    ],
+    ingredients:
+      '병풀추출물 72%, 글리세린, 부틸렌글라이콜, 스쿠알란, 세라마이드NP, 판테놀, 호호바씨오일, 로즈마리잎오일, 토코페롤',
+  },
+  {
+    id: 'film-2',
+    number: '2',
+    badgeTitle: 'Film 02 / 03 · 립 컬러 아카이브',
+    tabLabel: '02 · 벨벳 블러 립 틴트',
+    videoSrc: '/assets/videos/solstice_film_02_lip.mp4',
+    posterImage: '/src/assets/images/film02_lip_wide_1795160964024.jpg',
+    product: CURATION_PRODUCTS[0],
+    englishSubtitle: 'Airy Soft-Matte Velvet Tint',
+    description:
+      '미세한 블러링 파우더가 입술 굴곡을 매끈하게 채우고 모브 로즈와 딥 플럼 피그먼트가 하루 종일 투명하게 밀착되는 아틀리에 시그니처 립 틴트입니다.',
+    specs: [
+      { label: '발색 선명도', valueLabel: 'Soft Matte Pigment', percent: 94 },
+      { label: '밀착 지속력', valueLabel: '12h Velvet Blur', percent: 90 },
+      { label: '보습 편안함', valueLabel: 'Rosehip Complex', percent: 86 },
+    ],
+    ingredients:
+      '다이메티콘, 아이소도데케인, 로즈힙열매오일, 시어버터, 토코페릴아세테이트, 카올린, 적색산화철, 황색산화철',
+  },
+  {
+    id: 'film-3',
+    number: '3',
+    badgeTitle: 'Film 03 / 03 · 로즈우드 아이 아카이브',
+    tabLabel: '03 · 로즈우드 아이 팔레트',
+    videoSrc: '/assets/videos/solstice_film_03_palette.mp4',
+    posterImage: '/src/assets/images/film03_palette_wide_1795160964708.jpg',
+    product: CURATION_PRODUCTS[1],
+    englishSubtitle: '16-Pan Atelier Rosewood Eye Palette',
+    description:
+      '맑게 쌓이는 실키 매트 쉐이드부터 촉촉하게 밀착되는 쉬머 글리터까지, 톤온톤 아이 레이어링을 완성하는 아틀리에 16구 컬러 팔레트입니다.',
+    specs: [
+      { label: '피그먼트 발색', valueLabel: '16 Tonal Shades', percent: 96 },
+      { label: '가루 날림 최소화', valueLabel: 'Wet-Bake Texture', percent: 91 },
+      { label: '블렌딩 밀착력', valueLabel: 'Silky Blur Powder', percent: 94 },
+    ],
+    ingredients:
+      '탤크, 마이카, 실리카, 보론나이트라이드, 마카다미아씨오일, 토코페롤, 카민 프리 비건 피그먼트',
+  },
+];
+
+function formatTime(sec: number): string {
+  if (!Number.isFinite(sec) || sec < 0) return '00:00';
+  const mins = Math.floor(sec / 60);
+  const secs = Math.floor(sec % 60);
+  return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+}
+
+function VanityTableSection({
+  onAddToCart,
+  onAddBundleToCart,
+}: {
+  onAddToCart: (product: BeautyProduct, shade: ProductShade) => void;
+  onAddBundleToCart: (
+    items: { product: BeautyProduct; shade: ProductShade }[]
+  ) => void;
+}) {
+  const sectionRef = useRef<HTMLElement | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+
+  const { scrollYProgress } = useScroll({
+    target: sectionRef,
+    offset: ['start end', 'center center'],
+  });
+  const stageScale = useTransform(scrollYProgress, [0, 1], [0.95, 1]);
+  const stageOpacity = useTransform(scrollYProgress, [0, 0.5], [0.5, 1]);
+
+  const [activeFilmId, setActiveFilmId] =
+    useState<VanityFilmItem['id']>('film-1');
+  const [isPlaying, setIsPlaying] = useState(true);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [selectedShades, setSelectedShades] = useState<Record<string, string>>(
+    () => {
+      const initial: Record<string, string> = {};
+      VANITY_FILMS.forEach((film) => {
+        if (film.product.shades[0]) {
+          initial[film.id] = film.product.shades[0].id;
+        }
+      });
+      return initial;
+    }
+  );
+  const [showIngredients, setShowIngredients] = useState(false);
+
+  const activeFilm =
+    VANITY_FILMS.find((f) => f.id === activeFilmId) || VANITY_FILMS[0];
+
+  useEffect(() => {
+    const vid = videoRef.current;
+    if (!vid) return;
+    setCurrentTime(0);
+    setDuration(0);
+    if (isPlaying) {
+      void vid.play().catch(() => {});
+    }
+  }, [activeFilm.id]);
+
+  const togglePlayback = () => {
+    const vid = videoRef.current;
+    if (!vid) return;
+    if (vid.paused) {
+      void vid.play();
+      setIsPlaying(true);
+    } else {
+      vid.pause();
+      setIsPlaying(false);
+    }
+  };
+
+  const activeShadeId =
+    selectedShades[activeFilm.id] || activeFilm.product.shades[0]?.id;
+  const activeShade =
+    activeFilm.product.shades.find((s) => s.id === activeShadeId) ||
+    activeFilm.product.shades[0];
+
+  const bundleTotal = VANITY_FILMS.reduce(
+    (sum, f) => sum + f.product.price,
+    0
+  );
+
+  const handleSelectFilm = (filmId: VanityFilmItem['id']) => {
+    setActiveFilmId(filmId);
+    setIsPlaying(true);
+    setShowIngredients(false);
+  };
+
+  const handleAddBundle = () => {
+    const bundleItems = VANITY_FILMS.map((film) => {
+      const shadeId = selectedShades[film.id] || film.product.shades[0]?.id;
+      const shade =
+        film.product.shades.find((s) => s.id === shadeId) ||
+        film.product.shades[0];
+      return { product: film.product, shade };
+    });
+    onAddBundleToCart(bundleItems);
+  };
+
+  const progressPercent =
+    duration > 0 ? Math.min(100, (currentTime / duration) * 100) : 0;
+
+  return (
+    <section
+      ref={sectionRef}
+      id="vanity-table"
+      data-dark-surface="true"
+      className="bg-[#161313] py-20 text-[#FAF7F2] lg:py-24"
+    >
+      <div className="mx-auto max-w-[1320px] px-6 lg:px-12">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.2 }}
+          transition={{ duration: 0.6, ease: EASE_OUT }}
+          className="flex flex-col justify-between gap-6 border-b border-white/10 pb-8 lg:flex-row lg:items-end"
+        >
+          <div>
+            <p className="font-mono-code text-xs tracking-[0.16em] text-[#C85A62]">
+              04. INTERACTIVE VANITY TABLE
+            </p>
+            <h2 className="font-serif-kr mt-2.5 overflow-hidden text-3xl font-medium tracking-tight text-[#FAF7F2] sm:text-5xl">
+              <motion.span
+                initial={{ y: '105%', opacity: 0 }}
+                whileInView={{ y: '0%', opacity: 1 }}
+                viewport={{ once: true, amount: 0.4 }}
+                transition={{ duration: 0.75, ease: EASE_MASK }}
+                className="block"
+              >
+                세 가지 아틀리에 뷰티 필름.
+              </motion.span>
+            </h2>
+          </div>
+
+          <p className="max-w-md text-xs leading-relaxed text-[#A89F96] sm:text-sm">
+            하단 탭으로 3편의 아틀리에 실제 영상을 전환하며 각 장면 속 제품과
+            쉐이드를 바로 장바구니에 담아보세요.
+          </p>
+        </motion.div>
+
+        <motion.div
+          style={{ scale: stageScale, opacity: stageOpacity }}
+          className="mt-10 grid grid-cols-1 items-stretch gap-8 will-change-transform lg:grid-cols-12"
+        >
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.15 }}
+            transition={{ duration: 0.6, delay: 0.08, ease: EASE_OUT }}
+            className="lg:col-span-7"
+          >
+            <div className="relative h-full min-h-[440px] overflow-hidden rounded-2xl border border-white/10 bg-[#1F1B1B] sm:min-h-[540px]">
+              <video
+                ref={videoRef}
+                key={activeFilm.videoSrc}
+                src={activeFilm.videoSrc}
+                poster={activeFilm.posterImage}
+                autoPlay
+                muted
+                loop
+                playsInline
+                preload="auto"
+                onPlay={() => setIsPlaying(true)}
+                onPause={() => setIsPlaying(false)}
+                onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
+                onTimeUpdate={(e) =>
+                  setCurrentTime(e.currentTarget.currentTime)
+                }
+                className="absolute inset-0 h-full w-full object-cover"
+              />
+
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/40"
+              />
+
+              <div className="absolute top-4 right-4 left-4 z-10 flex items-center justify-between gap-3">
+                <div className="inline-flex items-center gap-2 rounded-lg border border-white/15 bg-black/65 px-3.5 py-1.5 backdrop-blur-md">
+                  <span
+                    className={`h-2 w-2 rounded-full ${
+                      isPlaying ? 'animate-pulse bg-[#D46A71]' : 'bg-[#8E857C]'
+                    }`}
+                  />
+                  <AnimatePresence mode="wait">
+                    <motion.span
+                      key={activeFilm.id}
+                      initial={{ opacity: 0, y: 4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -4 }}
+                      transition={{ duration: 0.2, ease: EASE_OUT }}
+                      className="font-mono-code text-[11px] text-[#FAF7F2]"
+                    >
+                      {activeFilm.badgeTitle}
+                    </motion.span>
+                  </AnimatePresence>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <span className="hidden rounded-md border border-white/15 bg-black/65 px-2.5 py-1.5 font-mono-code text-[11px] tabular-nums text-[#D8CFC6] backdrop-blur-md sm:inline-block">
+                    {formatTime(currentTime)} /{' '}
+                    {duration > 0 ? formatTime(duration) : '00:00'}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={togglePlayback}
+                    aria-label={isPlaying ? '영상 일시정지' : '영상 재생'}
+                    className="flex h-9 w-9 items-center justify-center rounded-full border border-white/25 bg-black/65 text-[#FAF7F2] backdrop-blur-md transition-colors hover:bg-black/85 cursor-pointer"
+                  >
+                    {isPlaying ? (
+                      <Pause className="h-3.5 w-3.5" aria-hidden="true" />
+                    ) : (
+                      <Play
+                        className="h-3.5 w-3.5 translate-x-[1px]"
+                        aria-hidden="true"
+                      />
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              <div className="absolute right-4 bottom-4 left-4 z-10 space-y-3">
+                <div className="h-[2px] w-full overflow-hidden rounded-full bg-white/20">
+                  <div
+                    style={{ width: `${progressPercent}%` }}
+                    className="h-full bg-[#C85A62] transition-[width] duration-150 ease-linear"
+                  />
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  {VANITY_FILMS.map((film) => {
+                    const isSelected = film.id === activeFilm.id;
+                    return (
+                      <button
+                        key={film.id}
+                        type="button"
+                        onClick={() => handleSelectFilm(film.id)}
+                        className={`hover-lift relative rounded-lg px-4 py-2.5 text-xs font-medium backdrop-blur-md whitespace-nowrap shrink-0 cursor-pointer ${
+                          isSelected
+                            ? 'text-white'
+                            : 'border border-white/20 bg-black/70 text-[#DFD8D0] hover:bg-black/85 hover:text-white'
+                        }`}
+                      >
+                        {isSelected && (
+                          <motion.span
+                            layoutId="vanity-tab-pill"
+                            transition={{ duration: 0.25, ease: EASE_OUT }}
+                            className="absolute inset-0 rounded-lg bg-[#A93F46] shadow-lg"
+                          />
+                        )}
+                        <span className="relative z-10">{film.tabLabel}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.15 }}
+            transition={{ duration: 0.6, delay: 0.14, ease: EASE_OUT }}
+            className="lg:col-span-5"
+          >
+            <div className="flex h-full flex-col justify-between rounded-2xl border border-white/10 bg-[#1B1717] p-6 sm:p-7">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={activeFilm.id}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.25, ease: EASE_OUT }}
+                >
+                  <div className="flex items-center justify-between font-mono-code text-xs text-[#9F958B]">
+                    <span>
+                      {activeFilm.product.code} ·{' '}
+                      {activeFilm.product.categoryTag}
+                    </span>
+                    <span>{activeFilm.product.weight}</span>
+                  </div>
+
+                  <div className="mt-5 flex items-center gap-4">
+                    <img
+                      src={activeFilm.product.image}
+                      alt={activeFilm.product.name}
+                      referrerPolicy="no-referrer"
+                      className="h-24 w-36 shrink-0 rounded-xl bg-[#2A2424] object-cover"
+                    />
+                    <div className="min-w-0">
+                      <h3 className="text-lg font-semibold tracking-tight text-[#FAF7F2]">
+                        {activeFilm.product.name}
+                      </h3>
+                      <p className="mt-0.5 text-xs text-[#A89F96]">
+                        {activeFilm.englishSubtitle}
+                      </p>
+                      <p className="font-mono-code mt-2.5 text-base font-medium tabular-nums text-[#E6B8BC]">
+                        {formatKRW(activeFilm.product.price)}
+                      </p>
+                    </div>
+                  </div>
+
+                  <p className="mt-5 text-[13px] leading-[1.75] text-[#BFB5AA]">
+                    {activeFilm.description}
+                  </p>
+
+                  <div className="mt-6 space-y-3.5 border-b border-white/10 pb-6">
+                    {activeFilm.specs.map((spec, idx) => (
+                      <div key={spec.label}>
+                        <div className="mb-1.5 flex items-center justify-between text-xs">
+                          <span className="text-[#C8BFB5]">{spec.label}</span>
+                          <span className="font-mono-code text-[#FAF7F2]">
+                            {spec.valueLabel}
+                          </span>
+                        </div>
+                        <div className="h-[3px] w-full overflow-hidden rounded-full bg-white/10">
+                          <motion.div
+                            initial={{ width: 0 }}
+                            animate={{ width: `${spec.percent}%` }}
+                            transition={{
+                              duration: 0.65,
+                              delay: idx * 0.08,
+                              ease: EASE_OUT,
+                            }}
+                            className="h-full rounded-full bg-[#A93F46]"
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="mt-6">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-xs text-[#BFB5AA]">
+                        컬러 · 옵션 —{' '}
+                        <span className="font-medium text-[#FAF7F2]">
+                          {activeShade?.name}
+                        </span>
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setShowIngredients((prev) => !prev)}
+                        className="nav-link-underline text-xs text-[#BFB5AA] hover:text-[#FAF7F2] cursor-pointer"
+                      >
+                        {showIngredients ? '성분 닫기' : '전체 성분 보기'}
+                      </button>
+                    </div>
+
+                    <AnimatePresence>
+                      {showIngredients && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -4 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -4 }}
+                          transition={{ duration: 0.2, ease: EASE_OUT }}
+                          className="mt-3 rounded-lg border border-white/10 bg-black/35 p-3 text-xs leading-relaxed text-[#C8BFB5]"
+                        >
+                          <div className="mb-1 flex items-center justify-between text-[11px] font-medium text-[#FAF7F2]">
+                            <span>전성분 안내</span>
+                            <button
+                              type="button"
+                              onClick={() => setShowIngredients(false)}
+                              aria-label="성분 안내 닫기"
+                              className="text-[#9F958B] hover:text-white cursor-pointer"
+                            >
+                              <X className="h-3.5 w-3.5" aria-hidden="true" />
+                            </button>
+                          </div>
+                          {activeFilm.ingredients}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+
+                    <div className="mt-3 flex flex-wrap gap-2.5">
+                      {activeFilm.product.shades.map((shade) => {
+                        const isSelected = shade.id === activeShade?.id;
+                        return (
+                          <button
+                            key={shade.id}
+                            type="button"
+                            onClick={() =>
+                              setSelectedShades((prev) => ({
+                                ...prev,
+                                [activeFilm.id]: shade.id,
+                              }))
+                            }
+                            className={`hover-lift inline-flex items-center gap-2 rounded-lg border px-3.5 py-2 text-xs font-medium cursor-pointer ${
+                              isSelected
+                                ? 'border-white bg-[#FAF8F5] text-[#1C1917]'
+                                : 'border-white/15 bg-transparent text-[#DFD8D0] hover:border-white/40'
+                            }`}
+                          >
+                            <span
+                              className="h-3 w-3 rounded-full border border-black/20"
+                              style={{ backgroundColor: shade.hex }}
+                            />
+                            <span>{shade.name}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      activeShade &&
+                      onAddToCart(activeFilm.product, activeShade)
+                    }
+                    className="hover-lift mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#A93F46] py-3.5 text-sm font-medium text-white hover:bg-[#91343A] cursor-pointer"
+                  >
+                    <Plus className="h-4 w-4" aria-hidden="true" />
+                    <span>선택 쉐이드 장바구니 담기</span>
+                  </button>
+                </motion.div>
+              </AnimatePresence>
+
+              <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-5">
+                <div className="flex items-center gap-2 text-xs text-[#BFB5AA]">
+                  <Layers
+                    className="h-3.5 w-3.5 text-[#D46A71]"
+                    aria-hidden="true"
+                  />
+                  <span>필름 큐레이션 3종 세트</span>
+                  <span aria-hidden="true">·</span>
+                  <span className="font-mono-code font-medium tabular-nums text-[#FAF7F2]">
+                    {formatKRW(bundleTotal)}
+                  </span>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleAddBundle}
+                  className="hover-lift inline-flex items-center gap-1.5 rounded-lg border border-white/20 bg-white/5 px-4 py-2 text-xs font-medium text-[#FAF7F2] hover:bg-white/15 whitespace-nowrap shrink-0 cursor-pointer"
+                >
+                  <span>룩 3종 한 번에 담기</span>
+                  <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
+/* ============================================================================
+   11. Atelier Philosophy Section & Boutique Footer
+============================================================================ */
+function AtelierSection() {
+  const sectionRef = useRef<HTMLElement | null>(null);
+  const { scrollYProgress } = useScroll({
+    target: sectionRef,
+    offset: ['start end', 'end start'],
+  });
+
+  const leftCardY = useTransform(scrollYProgress, [0, 1], [28, -28]);
+  const rightCardY = useTransform(scrollYProgress, [0, 1], [56, -56]);
+
+  return (
+    <section
+      ref={sectionRef}
+      id="atelier"
+      className="overflow-hidden border-y border-[#E5DFD6] bg-[#F3EFE8] py-20 lg:py-28"
+    >
+      <div className="mx-auto grid max-w-[1320px] grid-cols-1 items-center gap-12 px-6 lg:grid-cols-12 lg:px-12">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.2 }}
+          transition={{ duration: 0.6, ease: EASE_OUT }}
+          className="lg:col-span-5"
+        >
+          <p className="font-mono-code text-xs tracking-[0.16em] text-[#9E3E44]">
+            ATELIER PHILOSOPHY
+          </p>
+          <h2 className="font-serif-kr mt-3 text-3xl font-medium leading-[1.35] text-[#1C1917] text-balance">
+            <span className="block overflow-hidden">
+              <motion.span
+                initial={{ y: '105%', opacity: 0 }}
+                whileInView={{ y: '0%', opacity: 1 }}
+                viewport={{ once: true, amount: 0.4 }}
+                transition={{ duration: 0.75, ease: EASE_MASK }}
+                className="block"
+              >
+                자연의 색조와 절제된 텍스처로
+              </motion.span>
+            </span>
+            <span className="block overflow-hidden">
+              <motion.span
+                initial={{ y: '105%', opacity: 0 }}
+                whileInView={{ y: '0%', opacity: 1 }}
+                viewport={{ once: true, amount: 0.4 }}
+                transition={{ duration: 0.75, delay: 0.1, ease: EASE_MASK }}
+                className="block"
+              >
+                완성하는 피부의 균형
+              </motion.span>
+            </span>
+          </h2>
+          <p className="mt-5 text-[15px] leading-[1.75] text-[#575049]">
+            솔스티스 뷰티 아틀리에는 인위적인 광택이나 과장된 발색 대신, 피부
+            본연의 결과 톤 위에 자연스럽게 스며드는 레이어링을 연구합니다. 모든
+            컬렉션은 비건 인증 원료와 저자극 처방으로 제작됩니다.
+          </p>
+
+          <dl className="mt-8 grid grid-cols-3 gap-6 border-t border-[#E0D9CE] pt-6">
+            <div>
+              <dt className="font-mono-code text-[11px] text-[#7D746B]">
+                FORMULA
+              </dt>
+              <dd className="mt-1 text-sm font-semibold text-[#1C1917]">
+                100% 비건 처방
+              </dd>
+            </div>
+            <div>
+              <dt className="font-mono-code text-[11px] text-[#7D746B]">
+                TESTING
+              </dt>
+              <dd className="mt-1 text-sm font-semibold text-[#1C1917]">
+                저자극 테스트 완료
+              </dd>
+            </div>
+            <div>
+              <dt className="font-mono-code text-[11px] text-[#7D746B]">
+                CRAFT
+              </dt>
+              <dd className="mt-1 text-sm font-semibold text-[#1C1917]">
+                국내 아틀리에 제조
+              </dd>
+            </div>
+          </dl>
+        </motion.div>
+
+        <div className="lg:col-span-7 grid grid-cols-1 gap-5 sm:grid-cols-2 items-stretch">
+          <motion.div
+            style={{ y: leftCardY }}
+            className="hover-card-lift group overflow-hidden rounded-xl border border-[#E5DFD6] bg-white will-change-transform"
+          >
+            <img
+              src="/src/assets/images/atelier_philosophy_botanical_1795158559966.jpg"
+              alt="보태니컬 원료 아포테커리 리서치"
+              referrerPolicy="no-referrer"
+              className="h-full w-full object-cover aspect-[4/3] transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.04]"
+            />
+          </motion.div>
+
+          <motion.div
+            style={{ y: rightCardY }}
+            className="hover-card-lift group overflow-hidden rounded-xl border border-[#E5DFD6] bg-white will-change-transform"
+          >
+            <img
+              src="/src/assets/images/atelier_philosophy_boutique_1795158560476.jpg"
+              alt="솔스티스 뷰티 가로수길 아틀리에 부티크 공간"
+              referrerPolicy="no-referrer"
+              className="h-full w-full object-cover aspect-[4/3] transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.04]"
+            />
+          </motion.div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function BoutiqueFooter() {
+  return (
+    <motion.footer
+      id="boutique"
+      data-dark-surface="true"
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.2 }}
+      transition={{ duration: 0.6, ease: EASE_OUT }}
+      className="border-t border-white/10 bg-[#121010] px-6 py-14 text-[#DFD8D0] lg:px-12"
+    >
+      <div className="mx-auto flex max-w-[1320px] flex-col justify-between gap-8 border-b border-white/10 pb-10 md:flex-row md:items-end">
+        <div>
+          <p className="font-display-sans text-xl font-semibold text-[#FAF7F2]">
+            SOLSTICE® Beauty
+          </p>
+          <p className="mt-2 text-sm text-[#A89F96]">
+            서울특별시 강남구 압구정로12길 34, 솔스티스 아틀리에 부티크 (매일
+            11:00 – 20:30)
+          </p>
+        </div>
+
+        <div className="flex flex-wrap gap-6 text-xs text-[#A89F96]">
+          <span>고객센터 02-542-0920</span>
+          <span>·</span>
+          <span>atelier@solsticebeauty.kr</span>
+        </div>
+      </div>
+
+      <div className="mx-auto mt-6 flex max-w-[1320px] flex-col justify-between gap-4 text-xs text-[#7E766E] sm:flex-row">
+        <p>© 2026 Solstice Beauty Atelier. All rights reserved.</p>
+        <p>2026 Atelier Mood Collection · Garosu-gil</p>
+      </div>
+    </motion.footer>
+  );
+}
+
+/* ============================================================================
+   12. Section 05 — Blush-Pink Boutique Care FAQ & 1:1 Consultation Booking
+============================================================================ */
+const FAQS = [
+  {
+    q: '전 제품 비건 인증 및 민감성 피부 테스트가 완료되었나요?',
+    a: '네. 솔스티스 뷰티 아틀리에의 모든 컬러 및 스킨케어 포뮬러는 동물성 원료와 인공 합성 향료를 배제한 100% 비건 처방이며, 피부 자극 지수 0.00 판정을 받은 저자극 제품입니다.',
+  },
+  {
+    q: '가로수길 부티크 1:1 쉐이드 컨설팅은 어떻게 진행되나요?',
+    a: '전담 컬러 아티스트와 약 45분간 피부 언더톤과 결을 정밀 진단한 뒤, 나에게 가장 자연스럽게 어울리는 립·아이·베이스 쉐이드 조합을 직접 레이어링해 드립니다.',
+  },
+  {
+    q: '온라인 주문 시 쉐이드 교환 및 패키지 리필이 가능한가요?',
+    a: '미개봉 제품 수령 후 14일 이내 1회 무료 쉐이드 교환을 지원합니다. 립 틴트 및 쿠션 케이스 지참 후 부티크 방문 시 리필 할인 혜택도 제공됩니다.',
+  },
+  {
+    q: '배니티 필름에 등장한 3종 세트는 단독 구매보다 혜택이 있나요?',
+    a: '필름 큐레이션 3종 세트를 한 번에 장바구니에 담으시면 무료 시그니처 기프트 파우치 포장과 우선 출고 서비스가 함께 제공됩니다.',
+  },
+];
+
+const CONSULTATION_AREAS = [
+  '퍼스널 립 쉐이드 진단',
+  '16구 아이 톤온톤',
+  '보태니컬 스킨케어',
+  '아틀리에 기프트 & 센트',
+];
+
+const ARTISTS: Record<string, { name: string; role: string }> = {
+  '퍼스널 립 쉐이드 진단': {
+    name: '김서윤 수석 아티스트',
+    role: 'Lead Colorist · Lip & Cheek',
+  },
+  '16구 아이 톤온톤': {
+    name: '이하은 디렉터',
+    role: 'Senior Artist · Eye Architecture',
+  },
+  '보태니컬 스킨케어': {
+    name: '박진우 랩 스페셜리스트',
+    role: 'Skin Formulation Specialist',
+  },
+  '아틀리에 기프트 & 센트': {
+    name: '정유림 큐레이터',
+    role: 'Atelier Scent & Boutique Curator',
+  },
+};
+
+const TIME_SLOTS = ['11:00', '13:30', '15:00', '16:30', '18:00'];
+
+interface BookingRecord {
+  id: string;
+  name: string;
+  phone: string;
+  areas: string[];
+  note: string;
+  artist: { name: string; role: string };
+}
+
+function BoutiqueCareSection() {
+  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [selectedAreas, setSelectedAreas] = useState<string[]>([
+    '퍼스널 립 쉐이드 진단',
+  ]);
+  const [note, setNote] = useState('');
+  const [formError, setFormError] = useState('');
+  const [booking, setBooking] = useState<BookingRecord | null>(null);
+  const [modalStep, setModalStep] = useState<1 | 2 | 3>(1);
+  const [artistAssigned, setArtistAssigned] = useState(false);
+  const [selectedDayIndex, setSelectedDayIndex] = useState(0);
+  const [selectedTime, setSelectedTime] = useState<string | null>(null);
+  const [visitMode, setVisitMode] = useState<
+    '대면 · 가로수길 플래그십' | '화상 · 1:1 온라인 진단'
+  >('대면 · 가로수길 플래그십');
+
+  const upcomingDays = useMemo(() => {
+    const days: Date[] = [];
+    const cursor = new Date();
+    cursor.setHours(0, 0, 0, 0);
+    while (days.length < 5) {
+      cursor.setDate(cursor.getDate() + 1);
+      if (cursor.getDay() !== 0) {
+        days.push(new Date(cursor));
+      }
+    }
+    return days;
+  }, []);
+
+  useEffect(() => {
+    if (!booking || modalStep !== 1) return;
+    setArtistAssigned(false);
+    const timer = setTimeout(() => {
+      setArtistAssigned(true);
+    }, 1200);
+    return () => clearTimeout(timer);
+  }, [booking, modalStep]);
+
+  const handlePhoneInput = (raw: string) => {
+    const digits = raw.replace(/\D/g, '').slice(0, 11);
+    if (digits.length < 4) {
+      setPhone(digits);
+    } else if (digits.length < 8) {
+      setPhone(`${digits.slice(0, 3)}-${digits.slice(3)}`);
+    } else {
+      setPhone(
+        `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`
+      );
+    }
+  };
+
+  const toggleArea = (area: string) => {
+    setSelectedAreas((prev) =>
+      prev.includes(area) ? prev.filter((a) => a !== area) : [...prev, area]
+    );
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (name.trim().length < 2) {
+      setFormError('성함을 두 글자 이상 입력해 주세요.');
+      return;
+    }
+    if (!/^01[016789]-\d{3,4}-\d{4}$/.test(phone)) {
+      setFormError('연락처를 010-0000-0000 형식으로 입력해 주세요.');
+      return;
+    }
+
+    setFormError('');
+    const now = new Date();
+    const ymd = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(
+      2,
+      '0'
+    )}${String(now.getDate()).padStart(2, '0')}`;
+    const randomCode = String(Math.floor(1000 + Math.random() * 9000));
+    const primaryArea = selectedAreas[0] || '퍼스널 립 쉐이드 진단';
+
+    setBooking({
+      id: `SLS-${ymd}-${randomCode}`,
+      name: name.trim(),
+      phone,
+      areas: selectedAreas.length ? selectedAreas : ['퍼스널 립 쉐이드 진단'],
+      note: note.trim(),
+      artist: ARTISTS[primaryArea] || ARTISTS['퍼스널 립 쉐이드 진단'],
+    });
+    setModalStep(1);
+    setSelectedDayIndex(0);
+    setSelectedTime(null);
+  };
+
+  const handleDownloadICS = () => {
+    if (!booking || !selectedTime) return;
+    const day = upcomingDays[selectedDayIndex];
+    const [hh, mm] = selectedTime.split(':').map(Number);
+    const start = new Date(day);
+    start.setHours(hh, mm, 0, 0);
+    const end = new Date(start.getTime() + 45 * 60000);
+
+    const fmt = (d: Date) =>
+      `${d.toISOString().replace(/[-:]/g, '').split('.')[0]}Z`;
+
+    const icsContent = [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'PRODID:-//Solstice Beauty//Atelier//KO',
+      'BEGIN:VEVENT',
+      `UID:${booking.id}@solsticebeauty.kr`,
+      `DTSTAMP:${fmt(new Date())}`,
+      `DTSTART:${fmt(start)}`,
+      `DTEND:${fmt(end)}`,
+      `SUMMARY:SOLSTICE® Beauty 1:1 쉐이드 컨설팅 (${booking.artist.name})`,
+      `LOCATION:${
+        visitMode.startsWith('대면')
+          ? '서울특별시 강남구 압구정로12길 34, 솔스티스 아틀리에'
+          : '온라인 1:1 화상 진단'
+      }`,
+      `DESCRIPTION:예약번호 ${booking.id} · 관심 항목: ${booking.areas.join(', ')}`,
+      'END:VEVENT',
+      'END:VCALENDAR',
+    ].join('\r\n');
+
+    const blob = new Blob([icsContent], { type: 'text/calendar' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `solstice-atelier-${booking.id}.ics`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  return (
+    <section
+      id="consultation"
+      className="border-t border-[#E7B9C6] bg-[#F7D4DD] py-20 lg:py-28"
+    >
+      <div className="mx-auto grid max-w-[1320px] grid-cols-1 gap-12 px-6 lg:grid-cols-12 lg:px-12">
+        <div className="lg:col-span-6">
+          <p className="font-mono-code text-xs tracking-[0.16em] text-[#8E2F36]">
+            05. ATELIER CARE &amp; FAQ
+          </p>
+          <h2 className="font-serif-kr mt-2.5 text-3xl font-medium tracking-tight text-[#1C1917] sm:text-4xl">
+            자주 묻는 질문과 부티크 케어
+          </h2>
+
+          <div className="mt-8 divide-y divide-[#E4B5C3] border-y border-[#E4B5C3]">
+            {FAQS.map((item, idx) => {
+              const isOpen = openFaqIndex === idx;
+              return (
+                <div key={item.q}>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setOpenFaqIndex((prev) => (prev === idx ? null : idx))
+                    }
+                    aria-expanded={isOpen}
+                    className="flex w-full items-center justify-between gap-4 py-5 text-left cursor-pointer"
+                  >
+                    <span className="text-sm font-semibold text-[#1C1917] sm:text-base">
+                      {item.q}
+                    </span>
+                    <Plus
+                      className={`h-4 w-4 shrink-0 text-[#6E5358] transition-transform duration-300 ${
+                        isOpen ? 'rotate-45 text-[#8E2F36]' : ''
+                      }`}
+                      aria-hidden="true"
+                    />
+                  </button>
+
+                  <AnimatePresence initial={false}>
+                    {isOpen && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.3, ease: EASE_OUT }}
+                        className="overflow-hidden"
+                      >
+                        <p className="pb-5 text-xs leading-[1.8] text-[#4A3B3E] sm:text-sm">
+                          {item.a}
+                        </p>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <div
+          data-dark-surface="true"
+          className="rounded-2xl border border-white/10 bg-[#161313] p-6 text-[#FAF7F2] shadow-xl sm:p-8 lg:col-span-6"
+        >
+          <div className="flex items-center justify-between gap-3">
+            <span className="font-mono-code text-[11px] tracking-[0.14em] text-[#D46A71]">
+              GAROSU-GIL 1:1 CONSULTATION
+            </span>
+            <span className="inline-flex items-center gap-1.5 font-mono-code text-[11px] text-[#BFB5AA]">
+              <Sparkles className="h-3 w-3 text-[#D46A71]" aria-hidden="true" />
+              45 MIN FREE SESSION
+            </span>
+          </div>
+
+          <h3 className="font-serif-kr mt-2 text-2xl font-medium text-[#FAF7F2]">
+            나만의 퍼스널 쉐이드 진단 예약
+          </h3>
+          <p className="mt-1.5 text-xs leading-relaxed text-[#A89F96]">
+            원하는 분야를 선택해 신청하면 아티스트 배정과 날짜·시간 예약이
+            즉시 이어집니다.
+          </p>
+
+          <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label
+                  htmlFor="consult-name"
+                  className="font-mono-code block text-[11px] text-[#BFB5AA]"
+                >
+                  성함 *
+                </label>
+                <input
+                  id="consult-name"
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="예) 김지유"
+                  className="mt-1.5 w-full rounded-lg border border-white/15 bg-white/5 px-3.5 py-2.5 text-sm text-[#FAF7F2] placeholder:text-[#7E766E] focus:border-[#D46A71] focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="consult-phone"
+                  className="font-mono-code block text-[11px] text-[#BFB5AA]"
+                >
+                  연락처 *
+                </label>
+                <input
+                  id="consult-phone"
+                  type="tel"
+                  inputMode="numeric"
+                  value={phone}
+                  onChange={(e) => handlePhoneInput(e.target.value)}
+                  placeholder="010-0000-0000"
+                  className="mt-1.5 w-full rounded-lg border border-white/15 bg-white/5 px-3.5 py-2.5 text-sm text-[#FAF7F2] placeholder:text-[#7E766E] focus:border-[#D46A71] focus:outline-none"
+                />
+              </div>
+            </div>
+
+            <div>
+              <span className="font-mono-code block text-[11px] text-[#BFB5AA]">
+                관심 케어 분야 (복수 선택)
+              </span>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {CONSULTATION_AREAS.map((area) => {
+                  const active = selectedAreas.includes(area);
+                  return (
+                    <button
+                      key={area}
+                      type="button"
+                      onClick={() => toggleArea(area)}
+                      className={`rounded-lg border px-3 py-1.5 text-xs transition-all cursor-pointer ${
+                        active
+                          ? 'border-[#C85A62] bg-[#9E3E44] text-white'
+                          : 'border-white/15 bg-white/5 text-[#D8CFC6] hover:border-white/35'
+                      }`}
+                    >
+                      {area}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div>
+              <label
+                htmlFor="consult-note"
+                className="font-mono-code block text-[11px] text-[#BFB5AA]"
+              >
+                피부 고민 또는 선호 톤 (선택)
+              </label>
+              <textarea
+                id="consult-note"
+                rows={2}
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder="예) 속건조가 있고 차분한 모브 로즈 톤을 찾고 있습니다."
+                className="mt-1.5 w-full resize-none rounded-lg border border-white/15 bg-white/5 px-3.5 py-2.5 text-sm text-[#FAF7F2] placeholder:text-[#7E766E] focus:border-[#D46A71] focus:outline-none"
+              />
+            </div>
+
+            {formError && (
+              <p className="text-xs text-[#F2A58E]">{formError}</p>
+            )}
+
+            <button
+              type="submit"
+              style={{ '--curtain-bg': '#FAF8F5' } as React.CSSProperties}
+              className="meridian-btn flex w-full items-center justify-center gap-2 rounded-xl bg-[#9E3E44] py-3.5 text-sm font-medium text-[#FAF7F2] hover:text-[#1C1917] cursor-pointer"
+            >
+              <span>1:1 컨설팅 예약 진행하기</span>
+              <ArrowRight
+                className="meridian-arrow h-4 w-4"
+                aria-hidden="true"
+              />
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <AnimatePresence>
+        {booking && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 p-4 backdrop-blur-sm"
+            role="dialog"
+            aria-modal="true"
+            aria-label="아틀리에 1:1 컨설팅 예약"
+            onClick={() => setBooking(null)}
+          >
+            <motion.div
+              initial={{ opacity: 0, y: 20, scale: 0.97 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 14, scale: 0.97 }}
+              transition={{ duration: 0.3, ease: EASE_OUT }}
+              onClick={(e) => e.stopPropagation()}
+              className="relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-[#E5DFD6] bg-[#FAF8F5] p-6 text-[#1C1917] shadow-2xl sm:p-8"
+            >
+              <button
+                type="button"
+                onClick={() => setBooking(null)}
+                aria-label="예약 창 닫기"
+                className="absolute top-4 right-4 flex h-9 w-9 items-center justify-center rounded-full border border-[#DFD8CE] text-[#1C1917] hover:bg-[#1C1917] hover:text-white cursor-pointer"
+              >
+                <X className="h-4 w-4" aria-hidden="true" />
+              </button>
+
+              {modalStep === 1 && (
+                <div>
+                  <span className="font-mono-code text-xs tracking-[0.12em] text-[#9E3E44]">
+                    STEP 1 / 3 · 접수 완료
+                  </span>
+                  <h4 className="font-serif-kr mt-2 text-2xl font-medium text-[#1C1917]">
+                    {booking.name}님, 아틀리에 예약이 접수되었습니다.
+                  </h4>
+
+                  <div className="mt-5 flex items-center justify-between rounded-xl bg-[#161313] px-4 py-3 text-xs text-[#FAF7F2]">
+                    <span className="text-[#A89F96]">예약 번호</span>
+                    <span className="font-mono-code font-semibold text-[#E6B8BC]">
+                      {booking.id}
+                    </span>
+                  </div>
+
+                  <ul className="mt-6 space-y-4 border-l border-[#DFD8CE] pl-5 text-xs">
+                    <li className="relative">
+                      <span className="absolute top-1 -left-[25px] h-2.5 w-2.5 rounded-full bg-[#9E3E44]" />
+                      <p className="font-semibold text-[#1C1917]">
+                        컨설팅 요청 접수 완료
+                      </p>
+                      <p className="mt-0.5 text-[#625A53]">
+                        {booking.areas.join(', ')}
+                      </p>
+                    </li>
+
+                    <li className="relative">
+                      <span
+                        className={`absolute top-1 -left-[25px] h-2.5 w-2.5 rounded-full transition-colors ${
+                          artistAssigned
+                            ? 'bg-[#9E3E44]'
+                            : 'animate-pulse bg-[#D46A71]'
+                        }`}
+                      />
+                      <p className="font-semibold text-[#1C1917]">
+                        {artistAssigned
+                          ? '전담 컬러 아티스트 배정 완료'
+                          : '관심 분야 맞춤 아티스트 배정 중…'}
+                      </p>
+                      {artistAssigned && (
+                        <div className="mt-2 rounded-xl border border-[#E5DFD6] bg-white p-3">
+                          <p className="font-semibold text-[#1C1917]">
+                            {booking.artist.name}
+                          </p>
+                          <p className="text-[11px] text-[#7D746B]">
+                            {booking.artist.role}
+                          </p>
+                        </div>
+                      )}
+                    </li>
+                  </ul>
+
+                  <button
+                    type="button"
+                    disabled={!artistAssigned}
+                    onClick={() => setModalStep(2)}
+                    className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-[#1C1917] py-3.5 text-sm font-medium text-[#FAF8F5] transition-colors hover:bg-[#9E3E44] disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
+                  >
+                    <span>방문 날짜 · 시간 선택하기</span>
+                    <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                  </button>
+                </div>
+              )}
+
+              {modalStep === 2 && (
+                <div>
+                  <span className="font-mono-code text-xs tracking-[0.12em] text-[#9E3E44]">
+                    STEP 2 / 3 · 일정 선택
+                  </span>
+                  <h4 className="font-serif-kr mt-2 text-2xl font-medium text-[#1C1917]">
+                    {booking.artist.name}과의 45분 진단
+                  </h4>
+
+                  <p className="mt-5 text-xs font-semibold text-[#1C1917]">
+                    날짜 선택
+                  </p>
+                  <div className="mt-2 grid grid-cols-5 gap-2">
+                    {upcomingDays.map((day, idx) => {
+                      const active = idx === selectedDayIndex;
+                      const weekday = '일월화수목금토'[day.getDay()];
+                      return (
+                        <button
+                          key={day.toISOString()}
+                          type="button"
+                          onClick={() => {
+                            setSelectedDayIndex(idx);
+                            setSelectedTime(null);
+                          }}
+                          className={`rounded-xl border py-2.5 text-center transition-colors cursor-pointer ${
+                            active
+                              ? 'border-[#1C1917] bg-[#1C1917] text-[#FAF8F5]'
+                              : 'border-[#DFD8CE] bg-white text-[#1C1917] hover:border-[#1C1917]'
+                          }`}
+                        >
+                          <span className="block font-mono-code text-[10px] opacity-70">
+                            {day.getMonth() + 1}월 ({weekday})
+                          </span>
+                          <span className="mt-0.5 block text-base font-semibold">
+                            {day.getDate()}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <p className="mt-5 text-xs font-semibold text-[#1C1917]">
+                    시간 선택
+                  </p>
+                  <div className="mt-2 grid grid-cols-3 gap-2 sm:grid-cols-5">
+                    {TIME_SLOTS.map((slot) => {
+                      const active = selectedTime === slot;
+                      return (
+                        <button
+                          key={slot}
+                          type="button"
+                          onClick={() => setSelectedTime(slot)}
+                          className={`rounded-lg border py-2 font-mono-code text-xs font-medium transition-colors cursor-pointer ${
+                            active
+                              ? 'border-[#9E3E44] bg-[#9E3E44] text-white'
+                              : 'border-[#DFD8CE] bg-white text-[#1C1917] hover:border-[#1C1917]'
+                          }`}
+                        >
+                          {slot}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <p className="mt-5 text-xs font-semibold text-[#1C1917]">
+                    진행 방식
+                  </p>
+                  <div className="mt-2 grid grid-cols-2 gap-2">
+                    {(
+                      [
+                        '대면 · 가로수길 플래그십',
+                        '화상 · 1:1 온라인 진단',
+                      ] as const
+                    ).map((mode) => {
+                      const active = visitMode === mode;
+                      return (
+                        <button
+                          key={mode}
+                          type="button"
+                          onClick={() => setVisitMode(mode)}
+                          className={`rounded-lg border px-3 py-2.5 text-xs font-medium transition-colors cursor-pointer ${
+                            active
+                              ? 'border-[#1C1917] bg-[#1C1917] text-[#FAF8F5]'
+                              : 'border-[#DFD8CE] bg-white text-[#625A53]'
+                          }`}
+                        >
+                          {mode}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <button
+                    type="button"
+                    disabled={!selectedTime}
+                    onClick={() => setModalStep(3)}
+                    className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-[#9E3E44] py-3.5 text-sm font-medium text-white transition-colors hover:bg-[#823136] disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
+                  >
+                    <span>예약 확정하기</span>
+                    <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                  </button>
+                </div>
+              )}
+
+              {modalStep === 3 && (
+                <div>
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#9E3E44] text-white">
+                    <Check className="h-5 w-5" aria-hidden="true" />
+                  </div>
+                  <h4 className="font-serif-kr mt-4 text-2xl font-medium text-[#1C1917]">
+                    컨설팅 예약이 확정되었습니다.
+                  </h4>
+                  <p className="mt-1.5 text-xs text-[#625A53]">
+                    {booking.phone} 번호로 방문 안내 메시지가 전송됩니다.
+                  </p>
+
+                  <dl className="mt-5 grid grid-cols-[auto_1fr] gap-x-6 gap-y-2.5 rounded-xl border border-[#DFD8CE] bg-white p-4 text-xs">
+                    <dt className="font-mono-code text-[#7D746B]">예약번호</dt>
+                    <dd className="font-mono-code font-medium text-[#1C1917]">
+                      {booking.id}
+                    </dd>
+
+                    <dt className="font-mono-code text-[#7D746B]">일정</dt>
+                    <dd className="font-medium text-[#1C1917]">
+                      {upcomingDays[selectedDayIndex].getMonth() + 1}월{' '}
+                      {upcomingDays[selectedDayIndex].getDate()}일 {selectedTime}
+                    </dd>
+
+                    <dt className="font-mono-code text-[#7D746B]">아티스트</dt>
+                    <dd className="font-medium text-[#1C1917]">
+                      {booking.artist.name}
+                    </dd>
+
+                    <dt className="font-mono-code text-[#7D746B]">진행방식</dt>
+                    <dd className="font-medium text-[#1C1917]">{visitMode}</dd>
+                  </dl>
+
+                  <div className="mt-6 flex flex-wrap gap-3">
+                    <button
+                      type="button"
+                      onClick={handleDownloadICS}
+                      className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#1C1917] px-4 py-3 text-xs font-medium text-[#FAF8F5] hover:bg-[#9E3E44] cursor-pointer"
+                    >
+                      <Calendar className="h-3.5 w-3.5" aria-hidden="true" />
+                      <span>캘린더 추가 (.ics)</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setBooking(null)}
+                      className="rounded-xl border border-[#DFD8CE] px-5 py-3 text-xs font-medium text-[#1C1917] hover:bg-white cursor-pointer"
+                    >
+                      확인 완료
+                    </button>
+                  </div>
+                </div>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </section>
+  );
+}
+
+/* ============================================================================
+   13. Product Detail Modal & Cart Drawer
+============================================================================ */
+function ProductModal({
+  product,
+  initialShadeId,
+  onClose,
+  onAddToCart,
+}: {
+  product: BeautyProduct | null;
+  initialShadeId?: string;
+  onClose: () => void;
+  onAddToCart: (product: BeautyProduct, shade: ProductShade) => void;
+}) {
+  const [selectedShadeId, setSelectedShadeId] = useState<string>('');
+
+  useEffect(() => {
+    if (product && product.shades.length > 0) {
+      setSelectedShadeId(initialShadeId || product.shades[0].id);
+    }
+  }, [product, initialShadeId]);
+
+  const activeShade = product
+    ? product.shades.find((s) => s.id === selectedShadeId) || product.shades[0]
+    : null;
+
+  return (
+    <AnimatePresence>
+      {product && activeShade && (
+        <motion.div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="modal-product-title"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 p-4 backdrop-blur-xs"
+          onClick={onClose}
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.96, y: 12 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.96, y: 8 }}
+            transition={{ duration: 0.25, ease: EASE_MASK }}
+            className="relative w-full max-w-2xl overflow-hidden rounded-2xl border border-[#E5DFD6] bg-[#FAF8F5] text-[#1C1917] shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="닫기"
+              className="absolute top-4 right-4 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-[#1C1917] shadow-xs transition-colors hover:bg-white cursor-pointer"
+            >
+              <X className="h-4 w-4" aria-hidden="true" />
+            </button>
+
+            <div className="grid grid-cols-1 md:grid-cols-12">
+              <div className="bg-[#EAE5DC] md:col-span-5">
+                <img
+                  src={product.image}
+                  alt={product.name}
+                  referrerPolicy="no-referrer"
+                  className="aspect-[4/3] h-full w-full object-cover md:aspect-auto"
+                />
+              </div>
+
+              <div className="flex flex-col justify-between p-6 md:col-span-7 md:p-7">
+                <div>
+                  <p className="font-mono-code text-xs text-[#9E3E44]">
+                    {product.code} · {product.weight}
+                  </p>
+                  <h3
+                    id="modal-product-title"
+                    className="font-serif-kr mt-1.5 text-xl font-semibold text-[#1C1917]"
+                  >
+                    {product.name}
+                  </h3>
+                  <p className="mt-2.5 text-sm leading-relaxed text-[#575049]">
+                    {product.summary}
+                  </p>
+
+                  <ul className="mt-4 space-y-1.5 text-xs text-[#665E57]">
+                    {product.details.map((detail) => (
+                      <li key={detail} className="flex items-start gap-2">
+                        <Check
+                          className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#9E3E44]"
+                          aria-hidden="true"
+                        />
+                        <span>{detail}</span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  <div className="mt-6">
+                    <p className="text-xs font-medium text-[#1C1917]">
+                      옵션 선택:{' '}
+                      <span className="text-[#9E3E44]">{activeShade.name}</span>
+                    </p>
+                    <div className="mt-2.5 flex flex-wrap gap-2">
+                      {product.shades.map((shade) => {
+                        const isSelected = shade.id === activeShade.id;
+                        return (
+                          <motion.button
+                            key={shade.id}
+                            whileTap={{ scale: 0.96 }}
+                            type="button"
+                            onClick={() => setSelectedShadeId(shade.id)}
+                            className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-medium transition-colors cursor-pointer ${
+                              isSelected
+                                ? 'border-[#1C1917] bg-white text-[#1C1917] shadow-xs'
+                                : 'border-[#E0D9CE] bg-transparent text-[#575049] hover:border-[#B5ACA1]'
+                            }`}
+                          >
+                            <span
+                              className="h-3.5 w-3.5 rounded-full border border-black/15"
+                              style={{ backgroundColor: shade.hex }}
+                            />
+                            <span>{shade.name}</span>
+                          </motion.button>
+                        );
+                      })}
+                    </div>
+                    <p className="mt-2 text-xs text-[#7D746B]">
+                      {activeShade.description}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-7 flex items-center justify-between border-t border-[#E5DFD6] pt-5">
+                  <div>
+                    <p className="text-[11px] text-[#7D746B]">판매가</p>
+                    <p className="font-mono-code text-lg font-semibold tabular-nums text-[#1C1917]">
+                      {formatKRW(product.price)}
+                    </p>
+                  </div>
+
+                  <motion.button
+                    whileTap={{ scale: 0.97 }}
+                    type="button"
+                    onClick={() => {
+                      onAddToCart(product, activeShade);
+                      onClose();
+                    }}
+                    className="rounded-lg bg-[#9E3E44] px-5 py-3 text-xs font-medium text-[#FAF7F2] transition-colors hover:bg-[#853137] whitespace-nowrap shrink-0 cursor-pointer"
+                  >
+                    장바구니 담기
+                  </motion.button>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
+const FREE_SHIPPING_THRESHOLD = 50000;
+const FREE_GIFT_THRESHOLD = 100000;
+
+function CartDrawer({
+  isOpen,
+  items,
+  onClose,
+  onUpdateQty,
+  onRemoveItem,
+  onClearCart,
+}: {
+  isOpen: boolean;
+  items: CartItem[];
+  onClose: () => void;
+  onUpdateQty: (productId: string, shadeId: string, delta: number) => void;
+  onRemoveItem: (productId: string, shadeId: string) => void;
+  onClearCart: () => void;
+}) {
+  const [orderSubmitted, setOrderSubmitted] = useState(false);
+
+  const subtotal = items.reduce(
+    (sum, item) => sum + item.product.price * item.quantity,
+    0
+  );
+  const shippingFee =
+    subtotal === 0 || subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : 3000;
+  const total = subtotal + shippingFee;
+  const remainingForFreeShipping = Math.max(
+    0,
+    FREE_SHIPPING_THRESHOLD - subtotal
+  );
+  const remainingForGift = Math.max(0, FREE_GIFT_THRESHOLD - subtotal);
+  const giftProgress = Math.min(100, (subtotal / FREE_GIFT_THRESHOLD) * 100);
+
+  const handleCheckout = () => {
+    setOrderSubmitted(true);
+    onClearCart();
+  };
+
+  const handleCloseDrawer = () => {
+    setOrderSubmitted(false);
+    onClose();
+  };
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          role="dialog"
+          aria-modal="true"
+          aria-label="장바구니"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+          className="fixed inset-0 z-50 flex justify-end bg-black/55 backdrop-blur-xs"
+          onClick={handleCloseDrawer}
+        >
+          <motion.div
+            initial={{ x: '100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '100%' }}
+            transition={{ duration: 0.3, ease: EASE_MASK }}
+            className="flex h-full w-full max-w-md flex-col bg-[#FAF8F5] text-[#1C1917] shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-[#E5DFD6] px-6 py-5">
+              <div>
+                <h2 className="font-serif-kr text-lg font-semibold text-[#1C1917]">
+                  장바구니
+                </h2>
+                <p className="text-xs text-[#7D746B]">
+                  ₩50,000 무료 배송 · ₩100,000 아틀리에 미니 파우치 증정
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleCloseDrawer}
+                aria-label="장바구니 닫기"
+                className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E5DFD6] text-[#1C1917] transition-colors hover:bg-[#EFEAE2] cursor-pointer"
+              >
+                <X className="h-4 w-4" aria-hidden="true" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto px-6 py-5">
+              {orderSubmitted ? (
+                <div className="flex h-full flex-col items-center justify-center text-center">
+                  <CheckCircle2
+                    className="h-12 w-12 text-[#9E3E44]"
+                    aria-hidden="true"
+                  />
+                  <h3 className="font-serif-kr mt-4 text-xl font-semibold text-[#1C1917]">
+                    주문이 접수되었습니다
+                  </h3>
+                  <p className="mt-2 max-w-xs text-sm leading-relaxed text-[#625A53]">
+                    솔스티스 뷰티 아틀리에에서 정성스럽게 포장하여 빠르게
+                    발송해드리겠습니다.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleCloseDrawer}
+                    className="mt-6 rounded-lg bg-[#1C1917] px-6 py-3 text-xs font-medium text-[#FAF8F5] transition-colors hover:bg-[#332E2B] cursor-pointer"
+                  >
+                    쇼핑 계속하기
+                  </button>
+                </div>
+              ) : items.length === 0 ? (
+                <div className="flex h-full flex-col items-center justify-center text-center">
+                  <p className="text-sm text-[#7D746B]">
+                    장바구니에 담긴 상품이 없습니다.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleCloseDrawer}
+                    className="mt-4 rounded-lg border border-[#1C1917] px-5 py-2.5 text-xs font-medium text-[#1C1917] transition-colors hover:bg-[#1C1917] hover:text-white cursor-pointer"
+                  >
+                    컬렉션 둘러보기
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="rounded-xl border border-[#E5DFD6] bg-white p-4">
+                    <div className="flex items-center justify-between gap-2 text-xs text-[#575049]">
+                      {remainingForFreeShipping > 0 ? (
+                        <span>
+                          <strong className="font-mono-code font-semibold text-[#9E3E44]">
+                            {formatKRW(remainingForFreeShipping)}
+                          </strong>{' '}
+                          추가 시 무료 배송
+                        </span>
+                      ) : remainingForGift > 0 ? (
+                        <span>
+                          무료 배송 충족 ·{' '}
+                          <strong className="font-mono-code font-semibold text-[#9E3E44]">
+                            {formatKRW(remainingForGift)}
+                          </strong>{' '}
+                          추가 시 미니 파우치 증정
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-1.5 font-medium text-[#1C1917]">
+                          <Gift className="h-3.5 w-3.5 text-[#9E3E44]" aria-hidden="true" />
+                          무료 배송 + 아틀리에 우븐 미니 파우치 증정 적용!
+                        </span>
+                      )}
+                      <span className="font-mono-code text-[10px] text-[#7D746B] tabular-nums">
+                        {Math.round(giftProgress)}%
+                      </span>
+                    </div>
+
+                    <div className="mt-2.5 h-1.5 w-full overflow-hidden rounded-full bg-[#EFEAE2]">
+                      <motion.div
+                        animate={{ width: `${giftProgress}%` }}
+                        transition={{ duration: 0.4, ease: EASE_MASK }}
+                        className="h-full rounded-full bg-[#9E3E44]"
+                      />
+                    </div>
+                  </div>
+
+                  {items.map((item) => (
+                    <div
+                      key={`${item.product.id}-${item.shade.id}`}
+                      className="flex gap-4 rounded-xl border border-[#E6E0D7] bg-white p-3.5"
+                    >
+                      <img
+                        src={item.product.image}
+                        alt={item.product.name}
+                        referrerPolicy="no-referrer"
+                        className="h-20 w-20 shrink-0 rounded-lg bg-[#EAE5DC] object-cover"
+                      />
+
+                      <div className="flex min-w-0 flex-1 flex-col justify-between">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <h3 className="truncate text-sm font-semibold text-[#1C1917]">
+                              {item.product.name}
+                            </h3>
+                            <p className="mt-0.5 flex items-center gap-1.5 text-xs text-[#665E57]">
+                              <span
+                                className="inline-block h-2.5 w-2.5 rounded-full border border-black/15"
+                                style={{ backgroundColor: item.shade.hex }}
+                              />
+                              <span>{item.shade.name}</span>
+                            </p>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() =>
+                              onRemoveItem(item.product.id, item.shade.id)
+                            }
+                            aria-label={`${item.product.name} 삭제`}
+                            className="text-[#9A9086] transition-colors hover:text-[#9E3E44] cursor-pointer"
+                          >
+                            <Trash2 className="h-4 w-4" aria-hidden="true" />
+                          </button>
+                        </div>
+
+                        <div className="mt-3 flex items-center justify-between">
+                          <div className="inline-flex items-center rounded-md border border-[#E0D9CE]">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                onUpdateQty(item.product.id, item.shade.id, -1)
+                              }
+                              aria-label="수량 감소"
+                              className="p-1.5 text-[#575049] hover:text-[#1C1917] cursor-pointer"
+                            >
+                              <Minus className="h-3 w-3" aria-hidden="true" />
+                            </button>
+                            <span className="font-mono-code px-2.5 text-xs tabular-nums text-[#1C1917]">
+                              {item.quantity}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                onUpdateQty(item.product.id, item.shade.id, 1)
+                              }
+                              aria-label="수량 증가"
+                              className="p-1.5 text-[#575049] hover:text-[#1C1917] cursor-pointer"
+                            >
+                              <Plus className="h-3 w-3" aria-hidden="true" />
+                            </button>
+                          </div>
+
+                          <span className="font-mono-code text-sm font-medium tabular-nums text-[#1C1917]">
+                            {formatKRW(item.product.price * item.quantity)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+
+                  {remainingForGift === 0 && (
+                    <div className="flex items-center justify-between rounded-xl border border-dashed border-[#C85A62]/50 bg-[#FAF1F1] px-4 py-3 text-xs">
+                      <div className="flex items-center gap-2.5">
+                        <Gift className="h-4 w-4 text-[#9E3E44]" aria-hidden="true" />
+                        <span className="font-medium text-[#1C1917]">
+                          아틀리에 우븐 미니 파우치 (증정품)
+                        </span>
+                      </div>
+                      <span className="font-mono-code text-[11px] font-semibold text-[#9E3E44]">
+                        FREE
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {items.length > 0 && !orderSubmitted && (
+              <div className="border-t border-[#E5DFD6] bg-white px-6 py-5">
+                <div className="space-y-2 text-xs text-[#665E57]">
+                  <div className="flex justify-between">
+                    <span>상품 금액</span>
+                    <span className="font-mono-code tabular-nums">
+                      {formatKRW(subtotal)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>배송비</span>
+                    <span className="font-mono-code tabular-nums">
+                      {shippingFee === 0 ? '무료' : formatKRW(shippingFee)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between border-t border-[#EFEAE2] pt-2.5 text-sm font-semibold text-[#1C1917]">
+                    <span>총 결제 금액</span>
+                    <span className="font-mono-code tabular-nums">
+                      {formatKRW(total)}
+                    </span>
+                  </div>
+                </div>
+
+                <motion.button
+                  whileTap={{ scale: 0.98 }}
+                  type="button"
+                  onClick={handleCheckout}
+                  className="mt-5 w-full rounded-lg bg-[#9E3E44] py-3.5 text-sm font-medium text-[#FAF7F2] transition-colors hover:bg-[#853137] cursor-pointer"
+                >
+                  주문하기
+                </motion.button>
+              </div>
+            )}
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
+/* ============================================================================
+   14. Root App Component
+============================================================================ */
+export default function App() {
+  const [selectedFilmProduct, setSelectedFilmProduct] = useState<BeautyProduct>(
+    FILM_HIGHLIGHT_PRODUCTS[0]
+  );
+  const [modalState, setModalState] = useState<{
+    product: BeautyProduct | null;
+    initialShadeId?: string;
+  }>({ product: null });
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+
+  const totalCartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+
+  const handleOpenShadeModal = (
+    product: BeautyProduct,
+    initialShadeId?: string
+  ) => {
+    setModalState({ product, initialShadeId });
+  };
+
+  const mergeItemsIntoCart = (
+    incoming: { product: BeautyProduct; shade: ProductShade }[]
+  ) => {
+    setCartItems((prev) => {
+      const next = [...prev];
+      incoming.forEach(({ product, shade }) => {
+        const existingIndex = next.findIndex(
+          (item) =>
+            item.product.id === product.id && item.shade.id === shade.id
+        );
+        if (existingIndex >= 0) {
+          next[existingIndex] = {
+            ...next[existingIndex],
+            quantity: next[existingIndex].quantity + 1,
+          };
+        } else {
+          next.push({ product, shade, quantity: 1 });
+        }
+      });
+      return next;
+    });
+    setIsCartOpen(true);
+  };
+
+  const handleAddToCart = (product: BeautyProduct, shade: ProductShade) => {
+    mergeItemsIntoCart([{ product, shade }]);
+  };
+
+  const handleUpdateQty = (
+    productId: string,
+    shadeId: string,
+    delta: number
+  ) => {
+    setCartItems((prev) =>
+      prev
+        .map((item) =>
+          item.product.id === productId && item.shade.id === shadeId
+            ? { ...item, quantity: item.quantity + delta }
+            : item
+        )
+        .filter((item) => item.quantity > 0)
+    );
+  };
+
+  const handleRemoveItem = (productId: string, shadeId: string) => {
+    setCartItems((prev) =>
+      prev.filter(
+        (item) =>
+          !(item.product.id === productId && item.shade.id === shadeId)
+      )
+    );
+  };
+
+  const handleClearCart = () => {
+    setCartItems([]);
+  };
+
+  return (
+    <MotionConfig reducedMotion="user">
+      <style>{CUSTOM_CSS}</style>
+      <div className="min-h-screen bg-[#FAF8F5] text-[#1C1917]">
+        <CustomCursor />
+        <ScrollProgress />
+
+        <Navbar
+          cartCount={totalCartCount}
+          onOpenCart={() => setIsCartOpen(true)}
+        />
+
+        <main>
+          <HeroSection
+            selectedProduct={selectedFilmProduct}
+            onSelectProduct={setSelectedFilmProduct}
+            onOpenShadeModal={(product) => handleOpenShadeModal(product)}
+          />
+
+          <EditorialMarquee />
+
+          <CurationSection onOpenShadeModal={handleOpenShadeModal} />
+
+          <PigmentStudioSection onAddToCart={handleAddToCart} />
+
+          <HorizontalLookbookSection
+            onOpenShadeModal={(product) => handleOpenShadeModal(product)}
+          />
+
+          <VanityTableSection
+            onAddToCart={handleAddToCart}
+            onAddBundleToCart={mergeItemsIntoCart}
+          />
+
+          <AtelierSection />
+
+          <BoutiqueCareSection />
+        </main>
+
+        <BoutiqueFooter />
+
+        <ProductModal
+          product={modalState.product}
+          initialShadeId={modalState.initialShadeId}
+          onClose={() => setModalState({ product: null })}
+          onAddToCart={handleAddToCart}
+        />
+
+        <CartDrawer
+          isOpen={isCartOpen}
+          items={cartItems}
+          onClose={() => setIsCartOpen(false)}
+          onUpdateQty={handleUpdateQty}
+          onRemoveItem={handleRemoveItem}
+          onClearCart={handleClearCart}
+        />
+      </div>
+    </MotionConfig>
+  );
+}
