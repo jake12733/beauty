@@ -21,8 +21,8 @@
   --ease:cubic-bezier(.22,1,.36,1);
 }
 *{box-sizing:border-box;margin:0;padding:0}
-html{scroll-behavior:smooth}
-body{background:var(--cotton);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.7;-webkit-font-smoothing:antialiased;overflow-x:clip}
+html{scroll-behavior:smooth;overflow-x:clip}
+body{background:var(--cotton);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.7;-webkit-font-smoothing:antialiased;overflow-x:clip;word-break:keep-all;overflow-wrap:break-word}
 img,video{display:block;max-width:100%}
 a{color:inherit;text-decoration:none}
 button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
@@ -114,6 +114,7 @@ header.scrolled{background:rgba(241,236,227,.86);backdrop-filter:blur(14px);-web
 @media (max-width:960px){.hero-grid{grid-template-columns:1fr;gap:40px}.stamp{width:92px;height:92px;right:4px;top:-30px}.stamp strong{font-size:24px}}
 
 /* ribbon */
+.ribbon-wrap{overflow:hidden;padding:14px 0}
 .ribbon{background:var(--ink);color:var(--cotton);overflow:hidden;padding:18px 0;transform:rotate(-1.2deg);margin:10px -20px 0}
 .ribbon .track{display:flex;gap:48px;white-space:nowrap;width:max-content;animation:slide 32s linear infinite}
 .ribbon span{font-family:var(--display);font-style:italic;font-size:28px;display:flex;align-items:center;gap:48px}
@@ -127,6 +128,7 @@ section{position:relative}
 .sec-head h2{font-family:var(--serif);font-weight:400;font-size:clamp(32px,3.6vw,50px);line-height:1.25;letter-spacing:-.02em;margin-top:16px}
 .sec-head h2 em{font-family:var(--display);font-style:italic;color:var(--horn)}
 .sec-head p{color:var(--ink2);max-width:460px;justify-self:end}
+@media (max-width:600px){.sec-head h2,.nt h2,#collection h2{font-size:29px!important}.word{font-size:92px}.hero h1{font-size:23px}}
 @media (max-width:860px){.sec{padding:90px 0}.sec-head{grid-template-columns:1fr}.sec-head p{justify-self:start}}
 
 /* fold reveal */
@@ -377,10 +379,10 @@ footer{padding:60px 0 50px;border-top:1px dashed var(--line)}
   </div>
 </section>
 
-<div class="ribbon" aria-hidden="true"><div class="track">
+<div class="ribbon-wrap"><div class="ribbon" aria-hidden="true"><div class="track">
   <span>Fabric first</span><span>Button &amp; Dart</span><span>Mom &amp; Little</span><span>Made to fit</span><span>2027 First Collection</span>
   <span>Fabric first</span><span>Button &amp; Dart</span><span>Mom &amp; Little</span><span>Made to fit</span><span>2027 First Collection</span>
-</div></div>
+</div></div></div>
 
 <section class="sec" id="story">
   <div class="wrap">
