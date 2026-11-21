@@ -103,7 +103,7 @@ header.scrolled{background:rgba(241,236,227,.86);backdrop-filter:blur(14px);-web
 .leaf-b::after{background:linear-gradient(90deg,rgba(255,255,255,calc(var(--fs,.3) * .5)),transparent 35%)}
 .crease{position:absolute;top:30px;bottom:-18px;left:55.5%;width:0;border-left:2px dashed rgba(255,255,255,.75);z-index:3;transform:translateZ(1px)}
 .leaf .cap{position:absolute;left:16px;right:16px;bottom:16px;z-index:2;display:flex;justify-content:space-between;align-items:center;gap:8px;color:#fff;font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase}
-.leaf .cap span{background:rgba(30,27,24,.55);backdrop-filter:blur(6px);padding:7px 11px;border-radius:999px}
+.leaf .cap span{white-space:nowrap;background:rgba(30,27,24,.55);backdrop-filter:blur(6px);padding:7px 11px;border-radius:999px}
 .leaf .pp{width:36px;height:36px;border-radius:50%;background:rgba(250,247,241,.9);color:var(--ink);display:grid;place-items:center;flex:none}
 .fold-note{display:flex;justify-content:space-between;margin-top:22px;font-size:13.5px;color:var(--ink2)}
 .fold-note b{font-family:var(--mono);font-weight:500;font-size:11px;letter-spacing:.14em;color:var(--horn);display:block}
@@ -128,7 +128,7 @@ section{position:relative}
 .sec-head h2{font-family:var(--serif);font-weight:400;font-size:clamp(32px,3.6vw,50px);line-height:1.25;letter-spacing:-.02em;margin-top:16px}
 .sec-head h2 em{font-family:var(--display);font-style:italic;color:var(--horn)}
 .sec-head p{color:var(--ink2);max-width:460px;justify-self:end}
-@media (max-width:600px){.sec-head h2,.nt h2,#collection h2{font-size:29px!important}.word{font-size:92px}.hero h1{font-size:23px}}
+@media (max-width:600px){.leaf .cap{left:10px;right:10px;bottom:10px;font-size:9.5px}.leaf .cap span{padding:5px 8px}.leaf .pp{width:30px;height:30px}.sec-head h2,.nt h2,#collection h2{font-size:29px!important}.word{font-size:92px}.hero h1{font-size:23px}}
 @media (max-width:860px){.sec{padding:90px 0}.sec-head{grid-template-columns:1fr}.sec-head p{justify-self:start}}
 
 /* fold reveal */
@@ -452,9 +452,9 @@ footer{padding:60px 0 50px;border-top:1px dashed var(--line)}
     </div>
     <div class="ml-grid">
       <div class="ml-photos rv">
-        <figure><img src="assets/tf-mom-stand.jpg" alt="나란히 선 엄마와 아이" style="object-position:55% 60%" /><figcaption>SAME TONE · SAME KNIT</figcaption></figure>
-        <figure><img src="assets/tf-mom-kiss.jpg" alt="아이를 안고 입맞추는 엄마" /><figcaption>MOM</figcaption></figure>
-        <figure><img src="assets/tf-mom-kneel.jpg" alt="아이와 눈을 맞추는 엄마" style="object-position:62% 88%" /><figcaption>LITTLE</figcaption></figure>
+        <figure><img src="assets/tf-mom-kiss.jpg" alt="아이를 안고 입맞추는 엄마" style="object-position:50% 40%" /><figcaption>SAME TONE · SAME KNIT</figcaption></figure>
+        <figure><img src="assets/tf-mom-stand.jpg" alt="나란히 선 엄마와 아이" style="object-position:50% 100%" /><figcaption>MOM</figcaption></figure>
+        <figure><img src="assets/tf-mom-kneel.jpg" alt="아이와 눈을 맞추는 엄마" style="object-position:70% 100%" /><figcaption>LITTLE</figcaption></figure>
       </div>
       <div class="ml-panel rv d1" id="mlPanel" data-mode="mom">
         <div class="toggle" id="mlToggle"><i></i><button class="on" data-m="mom">MOM 사이즈</button><button data-m="little">LITTLE 사이즈</button></div>
