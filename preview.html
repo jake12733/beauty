@@ -279,7 +279,8 @@ table.size tbody{transition:opacity .3s}
 /* notify */
 .notify{padding:130px 0}
 .nt{background:var(--horn);color:var(--paper);border-radius:30px;padding:64px;display:grid;grid-template-columns:1.1fr 1fr;gap:56px;position:relative;overflow:hidden}
-.nt::before{content:"";position:absolute;right:-60px;top:-60px;width:220px;height:220px;background:linear-gradient(225deg,var(--cotton) 50%,#53321f 50%);border-bottom-left-radius:30px;opacity:.95}
+.nt::before{content:"";position:absolute;right:0;bottom:0;width:120px;height:120px;background:linear-gradient(315deg,var(--cotton) 50%,#53321f 50%);border-top-left-radius:22px}
+.nt .eyebrow::before{border-color:var(--chalk)}
 .nt h2{font-family:var(--serif);font-weight:400;font-size:clamp(32px,3.6vw,48px);line-height:1.25;letter-spacing:-.02em}
 .nt h2 em{font-family:var(--display);font-style:italic;color:var(--chalk)}
 .nt p{color:#ecd9cc;margin-top:16px;max-width:430px}
@@ -295,7 +296,7 @@ form.nf{display:flex;flex-direction:column;gap:14px;position:relative;z-index:1}
 .nf .btn:hover{background:#000}
 .nf .msg{font-size:14px;min-height:22px;color:var(--chalk)}
 .nf small{font-size:12px;color:#d2b8a8}
-@media (max-width:900px){.nt{grid-template-columns:1fr;padding:40px 26px;gap:30px}.nt::before{width:120px;height:120px;right:-30px;top:-30px}}
+@media (max-width:900px){.nt{grid-template-columns:1fr;padding:40px 26px 70px;gap:30px}.nt::before{width:64px;height:64px}}
 
 footer{padding:60px 0 50px;border-top:1px dashed var(--line)}
 .ft{display:flex;justify-content:space-between;gap:30px;flex-wrap:wrap;align-items:end}
@@ -357,7 +358,7 @@ footer{padding:60px 0 50px;border-top:1px dashed var(--line)}
     </div>
     <div class="card3d rv">
       <div class="stamp" aria-hidden="true">
-        <svg viewBox="0 0 118 118"><defs><path id="c" d="M59 59 m-44 0 a44 44 0 1 1 88 0 a44 44 0 1 1 -88 0"/></defs><text font-family="DM Mono" font-size="9.2" letter-spacing="2.6" fill="#1E1B18"><textPath href="#c">ONE FABRIC · TWO SIZES · ONE FABRIC · TWO SIZES ·</textPath></text></svg>
+        <svg viewBox="0 0 118 118"><defs><path id="c" d="M59 59 m-44 0 a44 44 0 1 1 88 0 a44 44 0 1 1 -88 0"/></defs><text font-family="DM Mono" font-size="9.2" letter-spacing="2.6" fill="#1E1B18"><textPath href="#c" textLength="272" lengthAdjust="spacing">ONE FABRIC · TWO SIZES · </textPath></text></svg>
         <strong>2027</strong>
       </div>
       <div class="leaves" id="leaves">
@@ -402,7 +403,7 @@ footer{padding:60px 0 50px;border-top:1px dashed var(--line)}
 <section class="sec fabric" id="fabric">
   <div class="wrap">
     <div class="sec-head">
-      <div><span class="eyebrow mono">02 · Fabric Library</span><h2 class="rv">먼저 고르는 건<br>디자인이 아니라 <em>원단</em>이에요.</h2></div>
+      <div><span class="eyebrow mono">02 · Fabric Library</span><h2 class="rv">디자인보다 먼저,<br><em>원단</em>을 고릅니다.</h2></div>
       <p class="rv d1">지금 샘플링 중인 원단들이에요. 하나씩 눌러서 질감과 특징을 살펴보세요.</p>
     </div>
     <div class="fab-wrap">
@@ -428,9 +429,9 @@ footer{padding:60px 0 50px;border-top:1px dashed var(--line)}
     <div class="anat">
       <div class="garment rv">
         <img src="assets/tf-look-silk.jpg" alt="크림색 블라우스를 입은 모델" />
-        <button class="pin on" data-i="0" style="left:51%;top:24%" aria-label="단추 디테일">01</button>
-        <button class="pin" data-i="1" style="left:58%;top:41%" aria-label="다트 디테일">02</button>
-        <button class="pin" data-i="2" style="left:26%;top:52%" aria-label="소매 디테일">03</button>
+        <button class="pin on" data-i="0" style="left:50%;top:34%" aria-label="단추 디테일">01</button>
+        <button class="pin" data-i="1" style="left:61%;top:46%" aria-label="다트 디테일">02</button>
+        <button class="pin" data-i="2" style="left:27%;top:56%" aria-label="소매 디테일">03</button>
       </div>
       <div class="loupe-list" id="loupes">
         <div class="lp on rv" data-i="0"><div class="mag"><img src="assets/tf-btn-macro.jpg" alt="단추 클로즈업" /></div><div><h3><span>01</span>단추 하나의 간격</h3><p>단추 사이 간격이 1cm만 달라져도 앞판이 벌어지는 정도가 달라져요. 체형마다 들뜨지 않는 간격을 찾아 배치합니다.</p></div></div>
@@ -449,9 +450,9 @@ footer{padding:60px 0 50px;border-top:1px dashed var(--line)}
     </div>
     <div class="ml-grid">
       <div class="ml-photos rv">
-        <figure><img src="assets/tf-mom-kneel.jpg" alt="아이와 눈을 맞추는 엄마" /><figcaption>SAME TONE · SAME KNIT</figcaption></figure>
+        <figure><img src="assets/tf-mom-stand.jpg" alt="나란히 선 엄마와 아이" style="object-position:55% 60%" /><figcaption>SAME TONE · SAME KNIT</figcaption></figure>
         <figure><img src="assets/tf-mom-kiss.jpg" alt="아이를 안고 입맞추는 엄마" /><figcaption>MOM</figcaption></figure>
-        <figure><img src="assets/tf-mom-stand.jpg" alt="나란히 선 엄마와 아이" /><figcaption>LITTLE</figcaption></figure>
+        <figure><img src="assets/tf-mom-kneel.jpg" alt="아이와 눈을 맞추는 엄마" style="object-position:62% 88%" /><figcaption>LITTLE</figcaption></figure>
       </div>
       <div class="ml-panel rv d1" id="mlPanel" data-mode="mom">
         <div class="toggle" id="mlToggle"><i></i><button class="on" data-m="mom">MOM 사이즈</button><button data-m="little">LITTLE 사이즈</button></div>
